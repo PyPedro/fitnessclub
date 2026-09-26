@@ -638,9 +638,10 @@ body {
 .custom-color-row .btn-primary { min-width: 22px; height: 22px; padding: 0 !important; border-radius: 50%; font-size: 11px; }
 .add-inline { margin-top: 7px; border: 0; background: transparent; color: var(--brand-purple); padding: 0; font-size: 11px; font-weight: 700; cursor: pointer; }
 .add-inline:hover { text-decoration: underline; }
-.product-colors { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: -2px 0 10px; }
-.product-color-swatch { display: inline-flex; align-items: center; gap: 5px; color: var(--text-muted); font-size: 9px; }
-.product-color-dot { width: 14px; height: 14px; display: inline-block; flex: 0 0 auto; border-radius: 50%; background: var(--swatch-color); border: 2px solid #fff; box-shadow: 0 0 0 1px #c8c2b9; }
+.product-colors { height: 18px; display: flex; align-items: center; gap: 5px; margin: -2px 0 10px; }
+.product-color-swatch { width: 14px; height: 14px; display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; }
+.product-color-dot { width: 11px; height: 11px; display: inline-block; border-radius: 50%; background: var(--swatch-color); box-shadow: 0 0 0 1px rgba(20,20,20,.16); }
+.product-color-overflow { padding-left: 1px; color: var(--text-muted); font-size: 9px; font-weight: 600; line-height: 1; }
 .variant-matrix { margin-top: 12px; display: grid; gap: 7px; padding: 9px; border: 1px solid var(--border-color); border-radius: 8px; background: #f8f9fb; }
 .variant-matrix::before { content: 'Estoque e preço por combinação'; color: var(--text-muted); font-size: 9px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
 .variant-color-row { display: grid; gap: 8px; padding: 9px; border: 1px solid var(--border-color); background: #fff; border-radius: 7px; }
