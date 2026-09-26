@@ -67,6 +67,10 @@ class ImagemSite(db.Model):
     nome = db.Column(db.String(120), nullable=False)
     imagem_url = db.Column(db.String(200), nullable=False)
 
+class ImportacaoEstoque(db.Model):
+    chave = db.Column(db.String(100), primary_key=True)
+    executada_em = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
 class Usuario(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)

@@ -1,7 +1,7 @@
 import os
 from PIL import Image, ImageOps
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session, current_app
-from app.models import Produto, ProdutoImagem, Usuario, Pedido, Admin, Visita, ImagemSite
+from app.models import Produto, ProdutoImagem, Usuario, Pedido, Admin, Visita, ImagemSite, ImportacaoEstoque
 from app import db
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -9,9 +9,61 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import or_
 import requests
 import json
+import re
 from datetime import datetime, timedelta
 
 main_bp = Blueprint('main', __name__)
+
+CORES_HEX = {
+    'açaí': '#59213c', 'amarelo manteiga': '#f2df9b', 'azul': '#2456a6', 'azul bebê': '#a8d6ee',
+    'azul marinho': '#172b4d', 'azul neblina': '#a9c5d6', 'azul royal': '#2450bd', 'azul turquesa': '#27a9b5',
+    'bege': '#d8c3a5', 'bordô': '#702637', 'branco': '#f8f8f5', 'caramelo': '#a9663d', 'cacau': '#684b3c',
+    'cinza': '#858585', 'fúcsia': '#d21a79', 'grafite': '#45464b', 'laranja': '#e77832', 'lilás': '#b8a2cf',
+    'marrom': '#593d32', 'marsala': '#713947', 'mostarda': '#bd941e', 'nude': '#c8a68d', 'office white': '#f4f1e9',
+    'pink cereja': '#c51e62', 'preto': '#1c1c1a', 'rosa bebê': '#f0c5d1', 'rosa pink': '#df4e92',
+    'rosa quente': '#df5a83', 'rosé': '#d99aa5', 'telha': '#a94e3b', 'terracota': '#b75b45', 'uva': '#54284f',
+    'verde': '#5b865d', 'verde água': '#8bc9b5', 'verde jade': '#3c9b79', 'verde limão': '#93b83e',
+    'verde militar': '#536247', 'verde musgo': '#626b43', 'vinho': '#692d3c', 'roxo': '#683f78',
+}
+
+
+def normalizar_cor(cor):
+    if not isinstance(cor, str):
+        return None
+    cor = re.sub(r'\s+', ' ', cor.strip())
+    if not cor:
+        return None
+    return cor[:50]
+
+
+def cor_para_hex(cor):
+    if not isinstance(cor, str):
+        return '#8b8b8b'
+    cor = cor.strip()
+    if re.fullmatch(r'#[0-9a-fA-F]{6}', cor):
+        return cor
+    return CORES_HEX.get(cor.casefold(), '#8b8b8b')
+
+
+def nome_cor(cor):
+    if not isinstance(cor, str) or not cor.strip():
+        return 'Cor não definida'
+    cor = cor.strip()
+    if re.fullmatch(r'#[0-9a-fA-F]{6}', cor):
+        nome = next((nome for nome, hex_cor in CORES_HEX.items() if hex_cor.casefold() == cor.casefold()), None)
+        return nome.title() if nome else f'Personalizada ({cor})'
+    return cor
+
+
+def chave_cor(cor):
+    nome = nome_cor(cor)
+    if nome.startswith('Personalizada ('):
+        return str(cor).strip().casefold()
+    return nome.casefold()
+
+
+def variantes_com_cor_hex(variantes):
+    return [{**variante, 'cor_hex': cor_para_hex(variante.get('cor')), 'cor_nome': nome_cor(variante.get('cor'))} for variante in variantes]
 
 @main_bp.app_context_processor
 def fornecer_variantes_imagem():
@@ -21,7 +73,12 @@ def fornecer_variantes_imagem():
             return caminho
         return f'{base}.{variante}.webp'
 
-    return {'imagem_variacao': imagem_variacao}
+    return {
+        'imagem_variacao': imagem_variacao,
+        'cor_hex': cor_para_hex,
+        'nome_cor': nome_cor,
+        'variantes_com_cor_hex': variantes_com_cor_hex,
+    }
 
 # ==========================================
 # GARI DE ESTOQUE (LIMPADOR AUTOMÁTICO)
@@ -137,7 +194,7 @@ def variantes_do_produto(produto):
 def atualizar_estoque_variante(produto, cor, nome_tamanho, delta):
     variantes = variantes_do_produto(produto)
     for variante in variantes:
-        mesma_cor = (variante.get('cor') or '').casefold() == (cor or '').casefold()
+        mesma_cor = chave_cor(variante.get('cor')) == chave_cor(cor)
         if mesma_cor:
             for tamanho in variante.get('tamanhos', []):
                 if tamanho['nome'].casefold() == str(nome_tamanho).casefold():
@@ -312,7 +369,7 @@ def api_admin_produtos():
     # Adicionado preco e imagem_url para a função de Edição no Frontend
     return jsonify([{
         "id": p.id, "codigo": p.codigo, "nome": p.nome, "preco": p.preco,
-        "precos": {tamanho: preco_tamanho(p, tamanho) for tamanho in ('P', 'M', 'G', 'GG')}, "grade": grade_do_produto(p), "cores": p.cores_config, "variantes": variantes_do_produto(p), "imagem_url": p.imagem_url,
+        "precos": {tamanho: preco_tamanho(p, tamanho) for tamanho in ('P', 'M', 'G', 'GG')}, "grade": grade_do_produto(p), "cores": p.cores_config, "variantes": variantes_com_cor_hex(variantes_do_produto(p)), "imagem_url": p.imagem_url,
         "imagens": [imagem.imagem_url for imagem in p.imagens],
         "p": p.estoque_p, "m": p.estoque_m, "g": p.estoque_g, "gg": p.estoque_gg
     } for p in produtos])
@@ -383,12 +440,13 @@ def api_admin_cadastrar_produto():
             precos = {'p': None, 'm': None, 'g': None, 'gg': None}
         variantes_normalizadas = []
         for variante in variantes_personalizadas:
+            cor = normalizar_cor(variante.get('cor'))
             tamanhos = [{'nome': str(t.get('nome', '')).strip(), 'estoque': max(0, int(t.get('estoque', 0))), 'preco': float(t.get('preco') or preco_base)} for t in variante.get('tamanhos', []) if str(t.get('nome', '')).strip()]
-            if tamanhos and variante.get('cor'):
-                variantes_normalizadas.append({'cor': variante['cor'], 'tamanhos': tamanhos})
+            if tamanhos and cor:
+                variantes_normalizadas.append({'cor': cor, 'tamanhos': tamanhos})
         if not variantes_normalizadas:
             return jsonify({"sucesso": False, "mensagem": "Adicione pelo menos uma cor e um tamanho válido."})
-        cores_normalizadas = [cor for cor in cores_personalizadas if isinstance(cor, str) and cor.startswith('#') and len(cor) == 7]
+        cores_normalizadas = [cor for cor in (normalizar_cor(item) for item in cores_personalizadas) if cor]
         grade_normalizada = variantes_normalizadas[0]['tamanhos']
         novo_produto = Produto(codigo=codigo, nome=nome, preco=preco_base, preco_p=precos['p'], preco_m=precos['m'], preco_g=precos['g'], preco_gg=precos['gg'], grade=json.dumps(grade_normalizada, ensure_ascii=False), cores=json.dumps(cores_normalizadas), variantes=json.dumps(variantes_normalizadas, ensure_ascii=False), etiqueta='NOVO', imagem_url='img/default.jpg', estoque_p=quantidades[0], estoque_m=quantidades[1], estoque_g=quantidades[2], estoque_gg=quantidades[3])
         db.session.add(novo_produto)
@@ -416,10 +474,17 @@ def api_admin_editar_produto(id):
         if request.form.get('grade'):
             prod.grade = request.form.get('grade')
         if request.form.get('cores') is not None:
-            prod.cores = json.dumps([cor for cor in json.loads(request.form.get('cores', '[]')) if isinstance(cor, str) and cor.startswith('#') and len(cor) == 7])
+            cores_editadas = [cor for cor in (normalizar_cor(item) for item in json.loads(request.form.get('cores', '[]'))) if cor]
+            prod.cores = json.dumps(cores_editadas, ensure_ascii=False)
         if request.form.get('variantes'):
-            prod.variantes = request.form.get('variantes')
-            prod.grade = json.dumps(json.loads(request.form.get('variantes'))[0].get('tamanhos', []), ensure_ascii=False)
+            variantes_editadas = json.loads(request.form.get('variantes'))
+            variantes_editadas = [
+                {'cor': cor, 'tamanhos': variante.get('tamanhos', [])}
+                for variante in variantes_editadas
+                if (cor := normalizar_cor(variante.get('cor')))
+            ]
+            prod.variantes = json.dumps(variantes_editadas, ensure_ascii=False)
+            prod.grade = json.dumps(variantes_editadas[0].get('tamanhos', []) if variantes_editadas else [], ensure_ascii=False)
 
         capa = request.files.get('capa')
         if capa and capa.filename:
@@ -606,7 +671,7 @@ def sync_carrinho():
                 db.session.rollback()
                 return jsonify({"sucesso": False, "mensagem": f"O produto '{item['nome']}' foi removido do catálogo."})
             
-            variante_configurada = next((variante for variante in variantes_do_produto(prod) if (variante.get('cor') or '').casefold() == (item.get('cor') or '').casefold()), None)
+            variante_configurada = next((variante for variante in variantes_do_produto(prod) if chave_cor(variante.get('cor')) == chave_cor(item.get('cor'))), None)
             tamanho_configurado = next((tamanho for tamanho in (variante_configurada or {}).get('tamanhos', []) if tamanho['nome'].casefold() == str(item['tamanho']).casefold()), None)
             estoque_disp = int(tamanho_configurado.get('estoque', 0)) if tamanho_configurado else 0
             

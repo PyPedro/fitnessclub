@@ -13,6 +13,22 @@
 
 O administrador só é criado automaticamente se ainda não existir nenhum registro e as duas variáveis `ADMIN_EMAIL` e `ADMIN_PASSWORD` estiverem definidas. Defina-as antes do primeiro acesso; alterar as variáveis depois não troca a senha de uma conta já criada.
 
+## Importar estoque inicial
+
+Depois de publicar o código, abra o Shell do serviço Web no Render e execute primeiro a validação:
+
+```powershell
+python -m scripts.importar_estoque
+```
+
+O comando confere as 38 referências com o catálogo existente e não grava dados. Se alguma referência estiver ausente ou ambígua, a importação é cancelada; corrija o cadastro/código do produto antes de continuar. Quando todas as correspondências estiverem corretas, execute uma única vez:
+
+```powershell
+python -m scripts.importar_estoque --apply
+```
+
+A carga atualiza cores, tamanhos e quantidades, preserva nomes, imagens e preços existentes, e registra sua execução para impedir reaplicação acidental.
+
 ## Persistência e pagamentos
 
 O PostgreSQL guarda produtos, clientes e pedidos. As imagens enviadas pelo painel são gravadas no disco montado em `/var/data`, portanto esse disco precisa permanecer anexado ao serviço. Os arquivos estáticos incluídos no repositório continuam sendo servidos normalmente.

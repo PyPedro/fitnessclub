@@ -111,10 +111,10 @@
                 <div class="product-info">
                     <div class="product-brand">LEYLY FITNESS</div>
                     <h3 class="product-name">{{ p.nome }}</h3>
-                    {% if p.cores_config %}<div class="product-colors" aria-label="Cores disponíveis">{% for cor in p.cores_config %}<span class="product-color-swatch" style="--swatch-color: {{ cor }}" title="Cor disponível"></span>{% endfor %}</div>{% endif %}
+                    {% if p.cores_config %}<div class="product-colors" aria-label="Cores disponíveis">{% for cor in p.cores_config %}<span class="product-color-swatch" title="{{ nome_cor(cor) }}"><span class="product-color-dot" style="--swatch-color: {{ cor_hex(cor) }}"></span><span>{{ nome_cor(cor) }}</span></span>{% endfor %}</div>{% endif %}
                     <div class="product-price">A partir de R$ {{ "%.2f"|format(p.preco) | replace('.', ',') }} <span style="font-size: 10px; color: #777; font-weight: 400;">(Atacado)</span></div>
                     
-                    <button class="btn-add-minimal" onclick='abrirModalGrade({{ p.id }}, {{ p.nome|tojson }}, {{ p.variantes_config|tojson }}, {{ url_for("static", filename=p.imagem_url)|tojson }})'>
+                    <button class="btn-add-minimal" onclick='abrirModalGrade({{ p.id }}, {{ p.nome|tojson }}, {{ variantes_com_cor_hex(p.variantes_config)|tojson }}, {{ url_for("static", filename=p.imagem_url)|tojson }})'>
                         Montar Grade
                     </button>
                 </div>

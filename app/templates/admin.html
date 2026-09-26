@@ -120,6 +120,14 @@
         .color-config-button { border: 0; background: transparent; color: var(--text-main); padding: 4px; font-size: 11px; font-weight: 700; cursor: pointer; }
         .color-config-button:hover { color: var(--brand-blue); }
         .custom-color-row > .btn-primary { min-width: 24px; height: 24px; padding: 0; border-radius: 50%; font-size: 12px; justify-content: center; }
+        .product-color-name { max-width: 170px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; background: #fff; color: var(--text-main); font-size: 11px; font-weight: 600; }
+        .custom-color-row .stock-color-swatch { width: 23px; height: 23px; }
+        .stock-variant-list { display: grid; gap: 8px; min-width: 280px; }
+        .stock-variant { display: grid; grid-template-columns: minmax(110px, .7fr) minmax(150px, 1.3fr); gap: 8px; align-items: center; }
+        .stock-color-name { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; }
+        .stock-color-swatch { width: 15px; height: 15px; flex: 0 0 auto; border: 1px solid rgba(15,23,42,.2); border-radius: 50%; background: var(--swatch-color); }
+        .stock-size-list { display: flex; flex-wrap: wrap; gap: 4px; }
+        .stock-size-value { padding: 4px 6px; border: 1px solid var(--border); border-radius: 5px; background: #fff; color: var(--text-main); font-size: 10px; white-space: nowrap; }
         .add-inline { margin-top: 8px; border: 1px solid var(--border); border-radius: 7px; background: #fff; color: var(--text-main); padding: 8px 12px; font-size: 11px; font-weight: 700; cursor: pointer; }
         .add-inline:hover { border-color: var(--brand-blue); color: var(--brand-blue); background: #f8fbff; }
         .variant-editor-backdrop { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(15,23,42,.48); backdrop-filter: blur(8px); opacity: 0; visibility: hidden; transition: opacity .2s, visibility .2s; }
@@ -255,10 +263,7 @@
                     <tr>
                         <th style="width: 80px;">Cód.</th>
                         <th>Produto</th>
-                        <th style="text-align:center; width: 80px;">Tam. P</th>
-                        <th style="text-align:center; width: 80px;">Tam. M</th>
-                        <th style="text-align:center; width: 80px;">Tam. G</th>
-                        <th style="text-align:center; width: 80px;">Tam. GG</th>
+                        <th>Cor e estoque por tamanho</th>
                         <th style="text-align:center; width: 140px;">Ação</th>
                     </tr>
                 </thead>
@@ -342,7 +347,7 @@
             </div>
             <div class="form-group"><label>Nome do Produto</label><input type="text" id="cad_nome" required class="form-control" placeholder="Nome completo da peça"></div>
             <div class="form-group"><label>Fotos do Produto (obrigatório, selecione várias)</label><input type="file" id="cad_img" accept="image/*" multiple required class="form-control" style="background: #fff; padding: 9px;"></div>
-            <div class="form-group variant-builder"><div class="builder-heading"><label>Cores</label><span>Clique em uma cor para configurar</span></div><div id="cad_color_rows" class="custom-color-list"></div><button type="button" class="add-inline" onclick="adicionarLinhaCor('cad_color_rows')">+ Cor</button></div>
+            <div class="form-group variant-builder"><div class="builder-heading"><label>Cores</label><span>Escolha a cor pelo nome e configure os tamanhos</span></div><div id="cad_color_rows" class="custom-color-list"></div><button type="button" class="add-inline" onclick="adicionarLinhaCor('cad_color_rows')">+ Cor</button></div>
             <button onclick="salvarNovoProduto()" class="btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 14px; margin-top: 10px;">Finalizar Cadastro</button>
         </div>
     </div>
@@ -360,7 +365,7 @@
             <div class="form-group"><label>Nome do Produto</label><input type="text" id="edit_nome" class="form-control"></div>
             <div class="form-group"><label>Substituir capa principal</label><label class="image-dropzone" for="edit_capa" data-default-text="Arraste suas imagens aqui ou clique para procurar"><input type="file" id="edit_capa" accept="image/*" class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste suas imagens aqui ou clique para procurar</span></label></div>
             <div class="form-group"><label>Adicionar fotos (deixe em branco para manter as atuais)</label><label class="image-dropzone" for="edit_img" data-default-text="Arraste suas imagens aqui ou clique para procurar"><input type="file" id="edit_img" accept="image/*" multiple class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste suas imagens aqui ou clique para procurar</span></label></div>
-            <div class="form-group variant-builder"><div class="builder-heading"><label>Cores</label><span>Clique em uma cor para configurar</span></div><div id="edit_color_rows" class="custom-color-list"></div><button type="button" class="add-inline" onclick="adicionarLinhaCor('edit_color_rows')">+ Cor</button></div>
+            <div class="form-group variant-builder"><div class="builder-heading"><label>Cores</label><span>Escolha a cor pelo nome e configure os tamanhos</span></div><div id="edit_color_rows" class="custom-color-list"></div><button type="button" class="add-inline" onclick="adicionarLinhaCor('edit_color_rows')">+ Cor</button></div>
             <button onclick="salvarEdicaoProduto()" class="btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 14px; margin-top: 10px;">Salvar Alterações</button>
         </div>
     </div>
@@ -638,12 +643,42 @@
             }).catch(err => { btn.innerText = textoOriginal; btn.disabled = false; alert("Erro de comunicação."); });
         }
 
+        const PALETA_CORES_VARIANTES = {
+            'Açaí': '#59213c', 'Amarelo manteiga': '#f2df9b', 'Azul': '#2456a6', 'Azul bebê': '#a8d6ee',
+            'Azul marinho': '#172b4d', 'Azul neblina': '#a9c5d6', 'Azul royal': '#2450bd', 'Azul turquesa': '#27a9b5',
+            'Bege': '#d8c3a5', 'Bordô': '#702637', 'Branco': '#f8f8f5', 'Caramelo': '#a9663d', 'Cacau': '#684b3c',
+            'Cinza': '#858585', 'Fúcsia': '#d21a79', 'Grafite': '#45464b', 'Laranja': '#e77832', 'Lilás': '#b8a2cf',
+            'Marrom': '#593d32', 'Marsala': '#713947', 'Mostarda': '#bd941e', 'Nude': '#c8a68d', 'Office White': '#f4f1e9',
+            'Pink cereja': '#c51e62', 'Preto': '#1c1c1a', 'Rosa bebê': '#f0c5d1', 'Rosa pink': '#df4e92',
+            'Rosa quente': '#df5a83', 'Rosé': '#d99aa5', 'Telha': '#a94e3b', 'Terracota': '#b75b45', 'Uva': '#54284f',
+            'Verde': '#5b865d', 'Verde água': '#8bc9b5', 'Verde jade': '#3c9b79', 'Verde limão': '#93b83e',
+            'Verde militar': '#536247', 'Verde musgo': '#626b43', 'Vinho': '#692d3c', 'Roxo': '#683f78'
+        };
+
+        function escaparHtml(valor) {
+            return String(valor ?? '').replace(/[&<>"']/g, caractere => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[caractere]);
+        }
+
+        function normalizarCorEditor(cor) {
+            const nome = Object.keys(PALETA_CORES_VARIANTES).find(item => item.toLocaleLowerCase('pt-BR') === String(cor || '').toLocaleLowerCase('pt-BR'));
+            if (nome) return nome;
+            const hex = /^#[0-9a-f]{6}$/i.test(cor || '') ? Object.entries(PALETA_CORES_VARIANTES).find(([, valor]) => valor.toLowerCase() === cor.toLowerCase())?.[0] : null;
+            return hex || cor || 'Preto';
+        }
+
+        function corHexEditor(cor) {
+            const nome = normalizarCorEditor(cor);
+            return PALETA_CORES_VARIANTES[nome] || ( /^#[0-9a-f]{6}$/i.test(nome) ? nome : '#8b8b8b');
+        }
+
         function carregarEstoque() {
             fetch('/api/admin/produtos').then(r=>r.json()).then(data => {
                 bancoDeProdutos = {};
                 document.getElementById('estoque-lista').innerHTML = data.map(p => {
                     bancoDeProdutos[p.id] = p;
-                    return `<tr><td style="font-weight: 800; color: var(--brand-blue);">${p.codigo || '-'}</td><td style="font-weight: 600;">${p.nome}</td><td style="text-align:center;"><input type="number" id="p_${p.id}_p" value="${p.p}"></td><td style="text-align:center;"><input type="number" id="p_${p.id}_m" value="${p.m}"></td><td style="text-align:center;"><input type="number" id="p_${p.id}_g" value="${p.g}"></td><td style="text-align:center;"><input type="number" id="p_${p.id}_gg" value="${p.gg}"></td><td style="text-align:center;"><div style="display: flex; gap: 4px; justify-content: center;"><button onclick="salvarEstoque(${p.id})" class="btn-primary" style="padding:6px 10px; font-size:11px; box-shadow: none;">Salvar</button><button onclick="abrirModalEditarProduto(${p.id})" class="btn-primary" style="padding:6px 8px; background: var(--warning); box-shadow: none;" title="Editar">✏️</button><button onclick="excluirProduto(${p.id})" class="btn-primary" style="padding:6px 8px; background: var(--danger); box-shadow: none;" title="Excluir">🗑️</button></div></td></tr>`
+                    const variantes = p.variantes || [];
+                    const variantesHtml = variantes.map(variante => `<div class="stock-variant"><span class="stock-color-name"><span class="stock-color-swatch" style="--swatch-color:${escaparHtml(variante.cor_hex || corHexEditor(variante.cor))}"></span>${escaparHtml(variante.cor_nome || variante.cor || 'Cor não definida')}</span><span class="stock-size-list">${(variante.tamanhos || []).map(tamanho => `<span class="stock-size-value">${escaparHtml(tamanho.nome)}: ${Number(tamanho.estoque) || 0}</span>`).join('')}</span></div>`).join('');
+                    return `<tr><td style="font-weight: 800; color: var(--brand-blue);">${escaparHtml(p.codigo || '-')}</td><td style="font-weight: 600;">${escaparHtml(p.nome)}</td><td><div class="stock-variant-list">${variantesHtml || '<span class="stock-size-value">Sem grade cadastrada</span>'}</div></td><td style="text-align:center;"><div style="display: flex; gap: 4px; justify-content: center;"><button onclick="abrirModalEditarProduto(${p.id})" class="btn-primary" style="padding:6px 8px; background: var(--warning); box-shadow: none;" title="Editar">✏️</button><button onclick="excluirProduto(${p.id})" class="btn-primary" style="padding:6px 8px; background: var(--danger); box-shadow: none;" title="Excluir">🗑️</button></div></td></tr>`
                 }).join('');
             });
         }
@@ -715,7 +750,7 @@
         let variantesEditor = { cad: [], edit: [] };
         let varianteAtualEditor = null;
 
-        function adicionarLinhaCor(containerId, cor = '#1c1c1a', tamanhos = []) {
+        function adicionarLinhaCor(containerId, cor = 'Preto', tamanhos = []) {
             const prefixo = containerId === 'cad_color_rows' ? 'cad' : 'edit';
             variantesEditor[prefixo].push({ cor, tamanhos });
             renderizarCores(prefixo);
@@ -723,7 +758,36 @@
 
         function renderizarCores(prefixo) {
             const container = document.getElementById(`${prefixo}_color_rows`);
-            container.innerHTML = variantesEditor[prefixo].map((variante, indice) => `<div class="custom-color-row" onclick="abrirEditorVariante('${prefixo}', ${indice})"><input type="color" class="product-color-input" value="${variante.cor}" onclick="event.stopPropagation()" onchange="alterarCorVariante('${prefixo}', ${indice}, this.value)"><button type="button" class="color-config-button" onclick="event.stopPropagation(); abrirEditorVariante('${prefixo}', ${indice})">Configurar</button><button type="button" class="btn-primary" onclick="event.stopPropagation(); removerVariante('${prefixo}', ${indice})" style="background: var(--danger); padding: 8px 11px;">×</button></div>`).join('');
+            container.replaceChildren();
+            variantesEditor[prefixo].forEach((variante, indice) => {
+                variante.cor = normalizarCorEditor(variante.cor);
+                const linha = document.createElement('div');
+                linha.className = 'custom-color-row';
+                const amostra = document.createElement('span');
+                amostra.className = 'stock-color-swatch';
+                amostra.style.setProperty('--swatch-color', corHexEditor(variante.cor));
+                const seletor = document.createElement('select');
+                seletor.className = 'product-color-name';
+                seletor.setAttribute('aria-label', 'Cor da variação');
+                Object.keys(PALETA_CORES_VARIANTES).forEach(nome => seletor.add(new Option(nome, nome)));
+                if (!Object.hasOwn(PALETA_CORES_VARIANTES, variante.cor)) seletor.add(new Option(`Cor existente (${variante.cor})`, variante.cor));
+                seletor.value = variante.cor;
+                seletor.addEventListener('change', () => alterarCorVariante(prefixo, indice, seletor.value));
+                const configurar = document.createElement('button');
+                configurar.type = 'button';
+                configurar.className = 'color-config-button';
+                configurar.textContent = 'Grade';
+                configurar.addEventListener('click', () => abrirEditorVariante(prefixo, indice));
+                const remover = document.createElement('button');
+                remover.type = 'button';
+                remover.className = 'btn-primary';
+                remover.style.cssText = 'background: var(--danger); padding: 8px 11px;';
+                remover.setAttribute('aria-label', 'Remover cor');
+                remover.textContent = '×';
+                remover.addEventListener('click', () => removerVariante(prefixo, indice));
+                linha.append(amostra, seletor, configurar, remover);
+                container.appendChild(linha);
+            });
         }
 
         function alterarCorVariante(prefixo, indice, cor) { variantesEditor[prefixo][indice].cor = cor; renderizarCores(prefixo); }
@@ -735,8 +799,8 @@
             varianteEditorPrefixo = prefixo;
             varianteAtualEditor = indice;
             const variante = variantesEditor[prefixo][indice];
-            document.getElementById('variantEditorTitle').innerText = `Cor ${indice + 1}`;
-            document.getElementById('variantEditorSwatch').style.background = variante.cor;
+            document.getElementById('variantEditorTitle').innerText = `Grade: ${variante.cor}`;
+            document.getElementById('variantEditorSwatch').style.background = corHexEditor(variante.cor);
             document.getElementById('variantEditorRows').innerHTML = '';
             document.getElementById('variantEditorFeedback').textContent = '';
             (variante.tamanhos.length ? variante.tamanhos : [{ nome: '', estoque: 0, preco: precoBaseEditor() }]).forEach(tamanho => adicionarLinhaEditorVariante(tamanho));
@@ -824,7 +888,7 @@
         function preencherCores(containerId, cores, variantes = []) {
             const prefixo = containerId === 'cad_color_rows' ? 'cad' : 'edit';
             variantesEditor[prefixo] = variantes.length ? variantes.map(item => ({ cor: item.cor, tamanhos: item.tamanhos || [] })) : (cores || []).map(cor => ({ cor, tamanhos: [] }));
-            if (!variantesEditor[prefixo].length) variantesEditor[prefixo] = [{ cor: '#1c1c1a', tamanhos: [] }];
+            if (!variantesEditor[prefixo].length) variantesEditor[prefixo] = [{ cor: 'Preto', tamanhos: [] }];
             renderizarCores(prefixo);
         }
 

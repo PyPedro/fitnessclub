@@ -194,7 +194,25 @@ function abrirModalGrade(id, nome, variantes, imagem) {
     
     produtoTemp = { id, nome, imagem, variantes, varianteSelecionada: 0 };
     document.getElementById('gradeNomeProduto').innerText = nome;
-    document.getElementById('productColorChoices').innerHTML = variantes.map((variante, indice) => `<button type="button" class="product-color-choice${indice === 0 ? ' active' : ''}" style="--choice-color: ${variante.cor || '#1c1c1a'}" aria-label="Selecionar cor" onclick="selecionarCorProduto(${indice})"></button>`).join('');
+    const opcoesDeCor = document.getElementById('productColorChoices');
+    opcoesDeCor.replaceChildren();
+    variantes.forEach((variante, indice) => {
+        const botao = document.createElement('button');
+        botao.type = 'button';
+        botao.className = `product-color-choice${indice === 0 ? ' active' : ''}`;
+        botao.style.setProperty('--choice-color', variante.cor_hex || '#1c1c1a');
+        const nomeCor = variante.cor_nome || variante.cor || 'Cor não definida';
+        botao.setAttribute('aria-label', `Selecionar cor ${nomeCor}`);
+        botao.title = nomeCor;
+        const amostra = document.createElement('span');
+        amostra.className = 'product-color-choice-swatch';
+        const nome = document.createElement('span');
+        nome.className = 'product-color-choice-label';
+        nome.textContent = nomeCor;
+        botao.append(amostra, nome);
+        botao.addEventListener('click', () => selecionarCorProduto(indice));
+        opcoesDeCor.appendChild(botao);
+    });
     renderizarTamanhosProduto();
 
     document.getElementById('gradeModal').style.display = 'flex';

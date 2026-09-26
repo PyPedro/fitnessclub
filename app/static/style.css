@@ -637,8 +637,9 @@ body {
 .custom-color-row .btn-primary { min-width: 22px; height: 22px; padding: 0 !important; border-radius: 50%; font-size: 11px; }
 .add-inline { margin-top: 7px; border: 0; background: transparent; color: var(--brand-purple); padding: 0; font-size: 11px; font-weight: 700; cursor: pointer; }
 .add-inline:hover { text-decoration: underline; }
-.product-colors { display: flex; align-items: center; gap: 6px; margin: -2px 0 10px; }
-.product-color-swatch { width: 16px; height: 16px; display: inline-block; border-radius: 50%; background: var(--swatch-color); border: 2px solid #fff; box-shadow: 0 0 0 1px #c8c2b9; }
+.product-colors { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: -2px 0 10px; }
+.product-color-swatch { display: inline-flex; align-items: center; gap: 5px; color: var(--text-muted); font-size: 9px; }
+.product-color-dot { width: 14px; height: 14px; display: inline-block; flex: 0 0 auto; border-radius: 50%; background: var(--swatch-color); border: 2px solid #fff; box-shadow: 0 0 0 1px #c8c2b9; }
 .variant-matrix { margin-top: 12px; display: grid; gap: 7px; padding: 9px; border: 1px solid var(--border-color); border-radius: 8px; background: #f8f9fb; }
 .variant-matrix::before { content: 'Estoque e preço por combinação'; color: var(--text-muted); font-size: 9px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
 .variant-color-row { display: grid; gap: 8px; padding: 9px; border: 1px solid var(--border-color); background: #fff; border-radius: 7px; }
@@ -649,9 +650,11 @@ body {
 .variant-cell strong { font-size: 12px; }
 .variant-cell label { display: grid; gap: 3px; color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: .3px; }
 .variant-cell input { min-width: 0; width: 100%; padding: 7px; border: 1px solid var(--border-color); border-radius: 5px; font-size: 11px; background: #fff; }
-.product-color-choices { display: flex; gap: 12px; padding: 4px 0 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; }
-.product-color-choice { width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; background: var(--choice-color); box-shadow: 0 0 0 1px #bdb7ae; cursor: pointer; transition: transform .2s, box-shadow .2s; }
-.product-color-choice:hover, .product-color-choice.active { transform: scale(1.12); box-shadow: 0 0 0 2px var(--text-main); }
+.product-color-choices { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; }
+.product-color-choice { min-height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 6px 9px; border: 1px solid var(--border-color); border-radius: 5px; background: #fff; color: var(--text-main); font-size: 10px; cursor: pointer; transition: border-color .2s, background .2s; }
+.product-color-choice:hover, .product-color-choice.active { border-color: var(--text-main); background: #f8f7f5; }
+.product-color-choice-swatch { width: 16px; height: 16px; flex: 0 0 auto; border-radius: 50%; background: var(--choice-color); border: 1px solid rgba(28,28,26,.2); }
+.product-color-choice-label { white-space: nowrap; }
 .cart-color-dot { width: 12px; height: 12px; display: inline-block; border-radius: 50%; border: 1px solid #c8c2b9; margin-right: 3px; vertical-align: -1px; }
 .variant-editor-backdrop { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(18, 22, 30, .48); backdrop-filter: blur(8px); opacity: 0; visibility: hidden; transition: opacity .2s, visibility .2s; }
 .variant-editor-backdrop.open { opacity: 1; visibility: visible; }

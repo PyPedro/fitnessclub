@@ -1,0 +1,939 @@
+# Inventario enviado pelo usuario. Ref 459 duplicada na mensagem; mantida uma unica ocorrencia.
+Conj short saia e top Ref 473
+M
+7 azul marinho
+6 preto
+2 grafite
+5 telha
+2 roxo
+6 açaí
+2 Pink cereja
+4 cacau
+2 bege
+3 caramelo
+1 verde militar
+1 vinho
+1 bordô
+G
+10 preto
+11 verde militar
+10 azul marinho
+5 telha
+5 cacau
+3 roxo
+3 açaí
+2 vinho
+2 caramelo
+2 bege
+3 grafite
+2 azul neblina
+2 bordô
+1 azul bebê
+
+Macaquinho c regulagem ref 510
+M
+2 açaí
+2 telha
+1 Pink cereja
+1 roxo
+7 verde militar
+7 cacau
+4 bege
+4 caramelo
+9 Azul marinho
+4 grafite
+G
+1 fúcsia
+1 Pink cereja
+3 roxo
+4 grafite
+7 caramelo
+4 bege
+7 cacau
+9 verde militar
+10 Azul marinho
+6 açaí
+7 telha
+1 preto
+
+Conj short saia e top Ref 459
+M
+1 preto
+2 Azul marinho
+2 roxo
+2 verde militar
+6 telha
+4 caramelo
+9 grafite
+G
+1 fúcsia
+1 rosé
+1 Pink cereja
+5 Caramelo
+8 roxo
+9 grafite
+9 verde militar
+8 Azul marinho
+9 telha
+
+Conj calça e top Ref 282
+M
+3 Azul marinho
+4 telha
+1 roxo
+1 verde militar
+6 Terracota
+G
+1 verde água
+1 uva
+3 terracota
+5 grafite
+1 roxo
+2 Pink cereja
+3 telha
+2 fúcsia
+4 verde militar
+
+Casaco c/ ziper Ref 424
+M
+18 azul marinho
+6 verde militar
+4 preto
+4 vinho
+9 Pink cereja
+6 roxo
+9 telha
+5 caramelo
+7 cacau
+4 fúcsia
+2 grafite
+4 verde musgo
+2 açaí
+4 bordô
+3 bege
+G
+17 azul marinho
+3 verde militar
+5 roxo
+5 telha
+7 cacau
+3 vinho
+4 bordô
+4 verde musgo
+3 caramelo
+6 Pink cereja
+2 preto
+3 bege
+1 fúcsia
+
+Colete com zíper ref 395
+M
+6 preto
+2 fúcsia
+1 Rosa quente
+3 verde musgo
+4 vinho
+6 cacau
+4 caramelo
+4 Pink cereja
+2 bordô
+16 Azul marinho
+3 grafite
+4 açaí
+4 roxo
+3 telha
+G
+9 preto
+7 fúcsia
+4 vinho
+3 verde musgo
+7 Rosa quente
+5 Pink cereja
+3 grafite
+1 marrom
+4 caramelo
+4 roxo
+4 bordô
+6 cacau
+3 telha
+4 açaí
+18 Azul marinho
+
+Saia com short e bolso ref 523
+M
+8 preto
+3 verde militar
+3 caramelo
+3 grafite
+6 bordô
+2 açaí
+3 açaí
+3 fúcsia
+4 telha
+3 roxo
+7 Azul marinho
+G
+5 preto
+5 Rosa quente
+3 fúcsia
+9 bordô
+4 grafite
+4 caramelo
+4 telha
+3 verde militar
+3 lilás
+3 açaí
+3 roxo
+10 Azul marinho
+
+Blusa frente única Ref 497
+M
+7 preto
+20 azul marinho
+11 caramelo
+9 cacau
+9 roxo
+5 fúcsia
+3 rosa quente
+6 telha
+2 cinza
+2 terracota
+2 bordô
+4 açaí
+1 vinho
+1 bege
+1 marrom
+G
+27 azul marinho
+7 verde militar
+16 caramelo
+21 telha
+7 grafite
+3 cinza
+12 cacau
+6 vinho
+9 preto
+4 roxo
+5 açaí
+3 Pink cereja
+3 bordô
+5 fúcsia
+1 marrom
+2 terracota
+2 rosa quente
+
+Casaco com zíper ref 333
+M
+2 Branco
+2 bege
+2 vinho
+2 bordô
+3 verde musgo
+2 açaí
+3 cacau
+7 verde água
+4 Pink cereja
+4 grafite
+3 telha
+6 marrom
+7 caramelo
+1 Terracota
+6 preto
+12 verde militar
+17 Azul marinho
+16 roxo
+G
+1 vinho
+1 Terracota
+2 bordô
+4 açaí
+3 grafite
+2 bege
+3 verde musgo
+2 cacau
+8 caramelo
+10 verde militar
+6 telha
+7 marrom
+6 Pink cereja
+13 roxo
+21 Azul marinho
+
+Tapa bumbum ref 422
+M
+3 laranja
+G
+4 laranja
+
+Calça cintura alta Ref 330
+M
+16 verde militar
+5 Pink cereja
+8 roxo
+2 preto
+6 caramelo
+1 grafite
+1 vinho
+1 rosé
+1 marrom
+G
+10 verde militar
+9 roxo
+9 caramelo
+2 telha
+2 fúcsia
+3 grafite
+1 preto
+1 azul marinho
+3 laranja
+2 terracota
+1 rosé
+
+Conj calça e top Ref 448
+M
+1 Pink cereja
+1 telha
+4 preto
+1 nude
+1 cacau
+4 açaí
+3 roxo
+3 caramelo
+3 bege
+2 marrom
+6 grafite
+18 Azul
+4 verde militar
+G
+2 Azul turquesa
+3 telha
+2 açaí
+3 vinho
+5 grafite
+3 marrom
+2 bege
+3 roxo
+3 cacau
+5 caramelo
+9 preto
+13 verde militar
+24 Azul marinho
+
+Conj calça e top Ref 509
+M
+19 azul marinho
+6 preto
+7 caramelo
+12 cacau
+4 telha
+5 vinho
+6 roxo
+5 fúcsia
+3 cinza
+1 rosa quente
+G
+25 azul marinho
+6 telha
+6 preto
+6 caramelo
+5 fúcsia
+12 cacau
+2 vinho
+5 roxo
+2 rosa quente
+1 verde militar
+3 cinza
+1 grafite
+2 bege
+1 terracota
+
+Short c/ bolso Ref 451
+M
+10 verde militar
+6 telha
+4 azul marinho
+6 caramelo
+2 grafite
+2 rosé
+1 terracota
+1 vinho
+1 uva
+G
+8 verde militar
+6 telha
+6 marrom
+4 grafite
+4 caramelo
+2 açaí
+2 roxo
+2 rosé
+1 azul marinho
+1 Pink cereja
+
+Croped tule 382
+M
+11 verde militar
+12 Rosa bebê
+15 Terracota
+29 telha
+27 Azul bebê
+26 bege
+21 Branco
+57 preto
+26 office White
+G
+15 Branco
+12Terracota
+12 verde militar
+11 Rosa bebê
+29 telha
+25 Azul bebê
+46 bege
+28 office White
+55 preto
+
+Short duplo plus size Ref 366
+GG2
+19 branco
+
+Short com bolso lateral 056
+M
+4 preto
+4 vinho
+8 verde militar
+4 cacau
+18 caramelo
+12 roxo
+3 bege
+13 grafite
+5 Terracota
+1 rosé
+1 verde musgo
+2 açaí
+3 telha
+2 Pink cereja
+35 Azul marinho
+G
+4 Pink cereja
+4 açaí
+1 bege
+3 Terracota
+4 rosé
+1 telha
+1 verde militar
+1 Azul marinho
+
+Short duplo c/ bolso Ref 383
+M
+21 azul Royal
+20 telha
+13 rosa pink
+10 grafite
+9 vinho
+G
+14 azul Royal
+11 telha
+7 rosa pink
+6 grafite
+7 vinho
+
+Short c/ Torsal na lateral Ref 004
+M
+26 vinho
+7 açaí
+6 cacau
+20 verde limão
+42 azul marinho
+1 verde água
+8 verde militar
+4 bordô
+3 fúcsia
+3 grafite
+23 Nude
+6 verde musgo
+6 terracota
+3 bege
+27 marrom
+11 roxo
+16 Pink cereja
+17 caramelo
+24 telha
+32 preto
+G
+1 rosa quente
+1 verde água
+3 fúcsia
+3 bege
+6 verde musgo
+11 açaí
+4 bordô
+11 verde militar
+21 preto
+7 grafite
+35 telha
+22 vinho
+15 marrom
+8 roxo
+36 azul marinho
+11 caramelo
+13 terracota
+23 Pink cereja
+
+Short duplo Ref 000
+M
+26 preto
+24 azul turquesa
+19 Rosa Pink
+22 azul marinho
+15 verde militar
+22 azul Royal
+10 mostarda
+10 verde Jade
+18 cinza
+G
+19 azul marinho
+14 preto
+14 azul Royal
+16 rosa pink
+28 azul turquesa
+5 mostarda
+15 verde militar
+8 cinza
+6 verde Jade
+1 bege
+GG
+13 azul turquesa
+4 rosa pink
+6 azul Royal
+4 verde Jade
+3 cinza
+5 verde militar
+6 Nude
+
+Conj short duplo e top Ref 248
+M
+5 azul marinho
+1 telha
+1 cacau
+1 bege
+G
+2 telha
+2 cacau
+1 grafite
+1 Pink cereja
+
+Conj short e top Ref 461
+M
+9 azul marinho
+8 caramelo
+2 caramelo
+3 preto
+2 roxo
+5 grafite
+2 rosa quente
+3 vinho
+1 verde militar
+1 fúcsia
+2 açaí
+G
+11 azul marinho
+7 preto
+4 açaí
+9 caramelo
+4 telha
+5 vinho
+2 fúcsia
+3 lilás
+3 grafite
+1 bordô
+1 rosa quente
+1 marrom
+1 roxo
+
+Conj short saia e top Ref 487
+M
+3 telha
+5 vinho
+9 azul marinho
+3 caramelo
+4 roxo
+3 verde militar
+2 rosa quente
+3 fúcsia
+5 açaí
+2 bordô
+1 verde musgo
+1 lilás
+1 azul neblina
+3 grafite
+10 preto
+G
+8 caramelo
+3 telha
+11 azul marinho
+4 verde água
+3 azul neblina
+3 verde militar
+6 vinho
+2 bordô
+4 açaí
+4 lilás
+3 rosa quente
+3 roxo
+9 preto
+3 grafite
+1 cacau
+2 fúcsia
+
+Macacão gola alta Ref 507
+M
+3 Rosa quente
+2 telha
+3 açaí
+5 azul marinho
+3 verde militar
+1 vinho
+1 bordô
+2 lilás
+5 grafite
+1 fúcsia
+8 caramelo
+1 preto
+G
+19 azul marinho
+7 rosa quente
+4 vinho
+3 bordô
+5 telha
+5 caramelo
+9 verde militar
+4 fúcsia
+1 lilás
+1 rosé
+3 açaí
+3 roxo
+1 Pink cereja
+3 grafite
+
+Conj short e top Ref 354
+M
+4 verde militar
+1 roxo
+1 telha
+2 azul marinho
+3 grafite
+7 preto
+G
+1 verde militar
+1 terracota
+1 açaí
+1 grafite
+1 marrom
+
+Conj short e top Ref 306
+M
+1 verde água
+1 bege
+3 roxo
+3 caramelo
+4 grafite
+3 cacau
+2 telha
+8 Azul marinho
+1 açaí
+3 preto
+G
+1 marrom
+1 vinho
+1 verde musgo
+2 açaí
+2 Pink cereja
+3 roxo
+5 caramelo
+3 telha
+3cacau
+3 bege
+3 verde
+6 grafite
+9 preto
+14 Azul marinho
+
+Macaquinho estilo camiseta Ref 512
+M
+10 cacau
+4 caramelo
+7 telha
+4 roxo
+2 bege
+1 grafite
+2 azul marinho
+1 bordô
+2 cinza
+G
+9 azul marinho
+4 açaí
+9 cacau
+3 fúcsia
+4 roxo
+7 caramelo
+5 telha
+3 bege
+5 grafite
+3 cinza
+6 preto
+
+Conj short e top Ref 407
+M
+4 verde militar
+4 preto
+1 roxo
+1 açaí
+1 bordô
+4 grafite
+1 marrom
+1 caramelo
+1 telha
+G
+2 bordô
+1 rosé
+3 caramelo
+2 bege
+5 telha
+3 Pink cereja
+1 açaí
+6 grafite
+1 roxo
+8 verde militar
+13 Azul marinho
+
+Conj short e top Ref 464
+M
+3 telha
+2 cacau
+3 azul marinho
+4 caramelo
+2 bege
+1 vinho
+2 grafite
+1 verde militar
+G
+4 telha
+5 azul marinho
+8 caramelo
+2 cacau
+3 bege
+3 grafite
+3 verde militar
+2 açaí
+
+Conj macacão com manga ref 505
+M
+16 preto
+17 Azul marinho
+3 caramelo
+3 bege
+3 grafite
+4 Pink cereja
+4 vinho
+1 marrom
+6 cacau
+3 marsala
+4 telha
+1 Terracota
+4 verde militar
+4 açaí
+4 roxo
+G
+14 preto
+4 vinho
+4 Pink cereja
+7 caramelo
+3 bege
+3 bordô
+3 grafite
+4 cacau
+4 açaí
+5 telha
+2 verde militar
+7 roxo
+12 Azul marinho
+
+Vestido esportivo Ref 467
+M
+14 caramelo
+9 azul marinho
+3 açaí
+4 telha
+2 cacau
+3 verde militar
+2 grafite
+1 roxo
+2 Pink cereja
+1 bege
+G
+18 verde militar
+20 caramelo
+11 azul marinho
+9 preto
+8 grafite
+5 açaí
+4 cacau
+4 telha
+2 bordô
+3 vinho
+2 bege
+4 roxo
+1 marrom
+
+Conj short duplo e top Ref 499
+M
+3 roxo
+3 grafite
+1 fúcsia
+1 azul marinho
+G
+2 azul marinho
+2 roxo
+1 Pink cereja
+1 vinho
+1 caramelo
+1 telha
+
+Conj short duplo e top e tiara Ref 442
+M
+4 amarelo manteiga
+5 azul neblina
+4 rosé
+3 azul bebê
+6 verde água
+7 lilás
+2 rosa bebê
+G
+5 amarelo manteiga
+7 verde água
+7 lilás
+1 azul bebê
+2 rosé
+2 azul neblina
+1 grafite
+1 verde militar
+
+Conj short e top Ref 409
+M
+3 verde militar
+1 vinho
+1 marrom
+1 Pink cereja
+6 preto
+4 açaí
+4 caramelo
+3 cacau
+1 bege
+6 roxo
+10 Azul marinho
+7 telha
+G
+3 açaí
+11 Azul marinho
+1 bordô
+4 verde militar
+5 caramelo
+4 grafite
+2 bege
+4 roxo
+1 marrom
+4 cacau
+7 telha
+
+Conj short saia top Ref 478
+M
+27 preto
+23 Azul marinho
+8 verde militar
+4 Pink cereja
+7 roxo
+5 cacau
+9 caramelo
+3 vinho
+3 bege
+6 grafite
+4 telha
+3 bordô
+2 açaí
+1 uva
+1 marrom
+G
+13 preto
+22 Azul marinho
+9 verde militar
+4 vinho
+6 Pink cereja
+7 grafite
+6 telha
+11 caramelo
+5 açaí
+3 roxo
+2 bordô
+1 rosé
+2 bege
+5 cacau
+
+Conj short duplo e top Ref 304
+M
+3 verde militar
+20 preto
+9 azul marinho
+2 telha
+2 Pink cereja
+4 verde musgo
+3 açaí
+4 grafite
+2 roxo
+G
+6 açaí
+4 telha
+2 roxo
+6 grafite
+5 preto
+3 verde musgo
+1 caramelo
+1 verde militar
+
+Macaquinho manga longa Ref 516
+M
+2 caramelo
+3 açaí
+1 telha
+2 lilás
+2 fúcsia
+2 verde militar
+1 rosa quente
+G
+3 telha
+2 açaí
+3 verde militar
+3 lilás
+3 caramelo
+3 grafite
+2 rosa quente
+1 fúcsia
+
+Conj short duplo e top Ref 348
+M
+2 Pink cereja
+11 verde militar
+4 preto
+2 azul marinho
+3 telha
+1 grafite
+1 fúcsia
+1 caramelo
+G
+12 azul marinho
+8 telha
+8 Pink cereja
+4 preto
+8 verde militar
+3 marrom
+1 terracota
+2 grafite
