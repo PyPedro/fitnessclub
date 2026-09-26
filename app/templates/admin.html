@@ -24,8 +24,9 @@
         .btn-outline:hover { background: #f1f5f9; transform: translateY(-1px); border-color: #cbd5e1; }
         .btn-danger { color: var(--danger); }
 
-        .top-nav { display: inline-flex; background: #e2e8f0; padding: 6px; border-radius: 10px; gap: 4px; margin-bottom: 30px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
-        .nav-tab { background: transparent; border: none; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; padding: 10px 20px; border-radius: 8px; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; }
+        .top-nav { display: inline-flex; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; vertical-align: top; background: #e2e8f0; padding: 6px; border-radius: 10px; gap: 4px; margin-bottom: 30px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .top-nav::-webkit-scrollbar { display: none; }
+        .nav-tab { flex: 0 0 auto; white-space: nowrap; background: transparent; border: none; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; padding: 10px 20px; border-radius: 8px; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; }
         .nav-tab:hover { color: var(--text-main); }
         .nav-tab.active { color: var(--brand-blue); background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
@@ -122,12 +123,34 @@
         .custom-color-row > .btn-primary { min-width: 24px; height: 24px; padding: 0; border-radius: 50%; font-size: 12px; justify-content: center; }
         .product-color-name { max-width: 170px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; background: #fff; color: var(--text-main); font-size: 11px; font-weight: 600; }
         .custom-color-row .stock-color-swatch { width: 23px; height: 23px; }
-        .stock-variant-list { display: grid; gap: 8px; min-width: 280px; }
-        .stock-variant { display: grid; grid-template-columns: minmax(110px, .7fr) minmax(150px, 1.3fr); gap: 8px; align-items: center; }
+        .stock-product-list { display: grid; gap: 8px; }
+        .stock-product { overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+        .stock-product[open] { border-color: #bfdbfe; box-shadow: 0 2px 8px rgba(37,99,235,.06); }
+        .stock-product-summary { min-height: 68px; display: grid; grid-template-columns: 48px minmax(0, 1fr) 18px; gap: 10px; align-items: center; padding: 11px 12px; cursor: pointer; list-style: none; }
+        .stock-product-summary::-webkit-details-marker { display: none; }
+        .stock-product-code { color: var(--brand-blue); font-size: 12px; font-weight: 800; }
+        .stock-product-heading { min-width: 0; }
+        .stock-product-name { display: block; overflow: hidden; color: var(--text-main); font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+        .stock-product-meta { display: block; margin-top: 3px; color: var(--text-muted); font-size: 10px; }
+        .stock-product-desktop-meta { display: none; }
+        .stock-product-chevron { width: 18px; height: 18px; color: var(--text-muted); transition: transform .18s ease; }
+        .stock-product[open] .stock-product-chevron { transform: rotate(180deg); }
+        .stock-product-content { padding: 0 12px 12px; border-top: 1px solid #eef0f3; }
+        .stock-variant-list { display: grid; gap: 0; min-width: 0; }
+        .stock-variant { display: grid; grid-template-columns: minmax(0, 1fr); gap: 7px; padding: 10px 0; border-bottom: 1px solid #f0f1f3; }
         .stock-color-name { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; }
         .stock-color-swatch { width: 15px; height: 15px; flex: 0 0 auto; border: 1px solid rgba(15,23,42,.2); border-radius: 50%; background: var(--swatch-color); }
-        .stock-size-list { display: flex; flex-wrap: wrap; gap: 4px; }
-        .stock-size-value { padding: 4px 6px; border: 1px solid var(--border); border-radius: 5px; background: #fff; color: var(--text-main); font-size: 10px; white-space: nowrap; }
+        .stock-size-list { display: flex; flex-wrap: wrap; gap: 5px; }
+        .stock-size-value { padding: 5px 7px; border: 1px solid var(--border); border-radius: 5px; background: #fff; color: var(--text-main); font-size: 11px; white-space: nowrap; }
+        .stock-product-actions { display: flex; justify-content: flex-end; gap: 7px; padding-top: 10px; }
+        .stock-product-actions .btn-primary { min-width: 38px; min-height: 38px; padding: 7px 10px; box-shadow: none; }
+        @media (min-width: 700px) {
+            .stock-product-summary { grid-template-columns: 70px minmax(0, 1fr) minmax(110px, auto) 18px; padding: 13px 16px; }
+            .stock-product-meta { margin: 0; text-align: right; }
+            .stock-product-desktop-meta { display: block; }
+            .stock-product-content { padding: 0 16px 14px; }
+            .stock-variant { grid-template-columns: minmax(140px, .45fr) minmax(0, 1fr); align-items: center; gap: 12px; }
+        }
         .add-inline { margin-top: 8px; border: 1px solid var(--border); border-radius: 7px; background: #fff; color: var(--text-main); padding: 8px 12px; font-size: 11px; font-weight: 700; cursor: pointer; }
         .add-inline:hover { border-color: var(--brand-blue); color: var(--brand-blue); background: #f8fbff; }
         .variant-editor-backdrop { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(15,23,42,.48); backdrop-filter: blur(8px); opacity: 0; visibility: hidden; transition: opacity .2s, visibility .2s; }
@@ -257,19 +280,7 @@
             <h2 style="margin: 0; font-size: 18px; font-weight: 700;">Catálogo e Grade Física</h2>
             <button class="btn-primary" onclick="document.getElementById('modalNovoProduto').style.display='flex'">+ Novo Produto</button>
         </div>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 80px;">Cód.</th>
-                        <th>Produto</th>
-                        <th>Cor e estoque por tamanho</th>
-                        <th style="text-align:center; width: 140px;">Ação</th>
-                    </tr>
-                </thead>
-                <tbody id="estoque-lista"></tbody>
-            </table>
-        </div>
+        <div id="estoque-lista" class="stock-product-list" aria-label="Produtos e estoque"></div>
     </div>
 
     <!-- PÁGINA 4: IMAGENS DO SITE -->
@@ -678,7 +689,9 @@
                     bancoDeProdutos[p.id] = p;
                     const variantes = p.variantes || [];
                     const variantesHtml = variantes.map(variante => `<div class="stock-variant"><span class="stock-color-name"><span class="stock-color-swatch" style="--swatch-color:${escaparHtml(variante.cor_hex || corHexEditor(variante.cor))}"></span>${escaparHtml(variante.cor_nome || variante.cor || 'Cor não definida')}</span><span class="stock-size-list">${(variante.tamanhos || []).map(tamanho => `<span class="stock-size-value">${escaparHtml(tamanho.nome)}: ${Number(tamanho.estoque) || 0}</span>`).join('')}</span></div>`).join('');
-                    return `<tr><td style="font-weight: 800; color: var(--brand-blue);">${escaparHtml(p.codigo || '-')}</td><td style="font-weight: 600;">${escaparHtml(p.nome)}</td><td><div class="stock-variant-list">${variantesHtml || '<span class="stock-size-value">Sem grade cadastrada</span>'}</div></td><td style="text-align:center;"><div style="display: flex; gap: 4px; justify-content: center;"><button onclick="abrirModalEditarProduto(${p.id})" class="btn-primary" style="padding:6px 8px; background: var(--warning); box-shadow: none;" title="Editar">✏️</button><button onclick="excluirProduto(${p.id})" class="btn-primary" style="padding:6px 8px; background: var(--danger); box-shadow: none;" title="Excluir">🗑️</button></div></td></tr>`
+                    const totalEstoque = variantes.reduce((total, variante) => total + (variante.tamanhos || []).reduce((soma, tamanho) => soma + (Number(tamanho.estoque) || 0), 0), 0);
+                    const resumo = `${variantes.length} ${variantes.length === 1 ? 'cor' : 'cores'} · ${totalEstoque} ${totalEstoque === 1 ? 'peça' : 'peças'}`;
+                    return `<details class="stock-product"><summary class="stock-product-summary"><span class="stock-product-code">${escaparHtml(p.codigo || '-')}</span><span class="stock-product-heading"><span class="stock-product-name">${escaparHtml(p.nome)}</span><span class="stock-product-meta">${resumo}</span></span><span class="stock-product-meta stock-product-desktop-meta">Ver estoque</span><svg class="stock-product-chevron" aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary><div class="stock-product-content"><div class="stock-variant-list">${variantesHtml || '<span class="stock-size-value">Sem grade cadastrada</span>'}</div><div class="stock-product-actions"><button type="button" onclick="abrirModalEditarProduto(${p.id})" class="btn-primary" style="background: var(--warning);" title="Editar produto" aria-label="Editar produto ${escaparHtml(p.codigo || '')}">✏️</button><button type="button" onclick="excluirProduto(${p.id})" class="btn-primary" style="background: var(--danger);" title="Excluir produto" aria-label="Excluir produto ${escaparHtml(p.codigo || '')}">🗑️</button></div></div></details>`
                 }).join('');
             });
         }
