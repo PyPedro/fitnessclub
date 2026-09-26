@@ -358,8 +358,8 @@
                 <div class="form-group"><label>Preço único (R$)</label><input type="number" id="edit_preco" step="0.01" min="0.01" class="form-control"></div>
             </div>
             <div class="form-group"><label>Nome do Produto</label><input type="text" id="edit_nome" class="form-control"></div>
-            <div class="form-group"><label>Substituir capa principal</label><input type="file" id="edit_capa" accept="image/*" class="form-control" style="background: #fff; padding: 9px;"></div>
-            <div class="form-group"><label>Adicionar fotos (deixe em branco para manter as atuais)</label><input type="file" id="edit_img" accept="image/*" multiple class="form-control" style="background: #fff; padding: 9px;"></div>
+            <div class="form-group"><label>Substituir capa principal</label><label class="image-dropzone" for="edit_capa" data-default-text="Arraste suas imagens aqui ou clique para procurar"><input type="file" id="edit_capa" accept="image/*" class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste suas imagens aqui ou clique para procurar</span></label></div>
+            <div class="form-group"><label>Adicionar fotos (deixe em branco para manter as atuais)</label><label class="image-dropzone" for="edit_img" data-default-text="Arraste suas imagens aqui ou clique para procurar"><input type="file" id="edit_img" accept="image/*" multiple class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste suas imagens aqui ou clique para procurar</span></label></div>
             <div class="form-group variant-builder"><div class="builder-heading"><label>Cores</label><span>Clique em uma cor para configurar</span></div><div id="edit_color_rows" class="custom-color-list"></div><button type="button" class="add-inline" onclick="adicionarLinhaCor('edit_color_rows')">+ Cor</button></div>
             <button onclick="salvarEdicaoProduto()" class="btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 14px; margin-top: 10px;">Salvar Alterações</button>
         </div>
@@ -372,6 +372,8 @@
             <p class="variant-editor-hint">Adicione os tamanhos e defina estoque e preço para esta cor.</p>
             <div id="variantEditorRows" class="variant-editor-rows"></div>
             <button type="button" class="add-inline" onclick="adicionarLinhaEditorVariante()">+ Adicionar tamanho</button>
+            <button type="button" class="variant-editor-replicate" onclick="aplicarTamanhosTodasCores()">Aplicar tamanhos a todas as cores</button>
+            <p id="variantEditorFeedback" class="variant-editor-feedback" role="status" aria-live="polite"></p>
             <button type="button" class="btn-primary variant-editor-save" onclick="salvarEditorVariante()">Concluir cor</button>
         </div>
     </div>
@@ -736,20 +738,84 @@
             document.getElementById('variantEditorTitle').innerText = `Cor ${indice + 1}`;
             document.getElementById('variantEditorSwatch').style.background = variante.cor;
             document.getElementById('variantEditorRows').innerHTML = '';
-            (variante.tamanhos.length ? variante.tamanhos : [{ nome: '', estoque: 0, preco: '' }]).forEach(tamanho => adicionarLinhaEditorVariante(tamanho));
+            document.getElementById('variantEditorFeedback').textContent = '';
+            (variante.tamanhos.length ? variante.tamanhos : [{ nome: '', estoque: 0, preco: precoBaseEditor() }]).forEach(tamanho => adicionarLinhaEditorVariante(tamanho));
             document.getElementById('variantEditor').classList.add('open');
+        }
+
+        function precoBaseEditor() {
+            // O preço único do formulário atual é a origem do valor inicial das novas linhas.
+            return Number(document.getElementById(`${varianteEditorPrefixo}_preco`).value) || '';
         }
 
         function adicionarLinhaEditorVariante(dados = {}) {
             const linha = document.createElement('div');
             linha.className = 'floating-variant-row';
-            linha.innerHTML = `<input type="text" class="variant-name-input" placeholder="Tamanho" value="${dados.nome || ''}"><input type="number" min="0" class="variant-stock-input" placeholder="Estoque" value="${dados.estoque ?? 0}"><input type="number" min="0.01" step="0.01" class="variant-price-input" placeholder="Preço" value="${dados.preco || ''}"><button type="button" onclick="this.parentElement.remove()">×</button>`;
+            const seletorTamanho = document.createElement('select');
+            seletorTamanho.className = 'variant-name-input';
+            seletorTamanho.setAttribute('aria-label', 'Tamanho');
+            seletorTamanho.innerHTML = '<option value="">Tamanho</option><option value="P">P</option><option value="M">M</option><option value="G">G</option><option value="GG">GG</option>';
+            if (dados.nome && !['P', 'M', 'G', 'GG'].includes(dados.nome)) {
+                const tamanhoLegado = document.createElement('option');
+                tamanhoLegado.value = dados.nome;
+                tamanhoLegado.textContent = dados.nome;
+                seletorTamanho.appendChild(tamanhoLegado);
+            }
+            seletorTamanho.value = dados.nome || '';
+            linha.appendChild(seletorTamanho);
+            linha.insertAdjacentHTML('beforeend', `<input type="number" min="0" class="variant-stock-input" placeholder="Estoque" aria-label="Estoque" value="${dados.estoque ?? 0}"><input type="number" min="0.01" step="0.01" class="variant-price-input" placeholder="Preço" aria-label="Preço" value="${dados.preco ?? precoBaseEditor()}"><button type="button" aria-label="Remover tamanho" onclick="this.parentElement.remove()">×</button>`);
             document.getElementById('variantEditorRows').appendChild(linha);
         }
 
+        function lerTamanhosEditorAtual() {
+            return Array.from(document.querySelectorAll('#variantEditorRows .floating-variant-row')).map(linha => ({ nome: linha.querySelector('.variant-name-input').value, estoque: Number(linha.querySelector('.variant-stock-input').value) || 0, preco: Number(linha.querySelector('.variant-price-input').value) || null })).filter(tamanho => tamanho.nome);
+        }
+
+        // Persiste a grade aberta e cria cópias independentes para todas as cores.
+        function aplicarTamanhosTodasCores() {
+            const tamanhos = lerTamanhosEditorAtual();
+            if (!tamanhos.length) {
+                document.getElementById('variantEditorFeedback').textContent = 'Selecione pelo menos um tamanho para replicar.';
+                return;
+            }
+            variantesEditor[varianteEditorPrefixo].forEach(variante => {
+                variante.tamanhos = tamanhos.map(tamanho => ({ ...tamanho }));
+            });
+            document.getElementById('variantEditorFeedback').textContent = 'Tamanhos aplicados a todas as cores.';
+        }
+
         function salvarEditorVariante() {
-            variantesEditor[varianteEditorPrefixo][varianteAtualEditor].tamanhos = Array.from(document.querySelectorAll('#variantEditorRows .floating-variant-row')).map(linha => ({ nome: linha.querySelector('.variant-name-input').value.trim(), estoque: Number(linha.querySelector('.variant-stock-input').value) || 0, preco: Number(linha.querySelector('.variant-price-input').value) || null })).filter(tamanho => tamanho.nome);
+            variantesEditor[varianteEditorPrefixo][varianteAtualEditor].tamanhos = lerTamanhosEditorAtual();
             fecharEditorVariante();
+        }
+
+        function configurarAreasUpload() {
+            document.querySelectorAll('.image-dropzone').forEach(area => {
+                const input = area.querySelector('input[type="file"]');
+                const texto = area.querySelector('.image-dropzone-copy');
+                const atualizarTexto = () => {
+                    texto.textContent = input.files.length ? Array.from(input.files).map(arquivo => arquivo.name).join(', ') : area.dataset.defaultText;
+                };
+                input.addEventListener('change', atualizarTexto);
+                area.addEventListener('dragover', evento => {
+                    evento.preventDefault();
+                    area.classList.add('is-dragging');
+                });
+                area.addEventListener('dragleave', evento => {
+                    if (!area.contains(evento.relatedTarget)) area.classList.remove('is-dragging');
+                });
+                area.addEventListener('drop', evento => {
+                    evento.preventDefault();
+                    area.classList.remove('is-dragging');
+                    const imagens = Array.from(evento.dataTransfer.files).filter(arquivo => arquivo.type.startsWith('image/'));
+                    if (!imagens.length) return;
+                    const arquivos = new DataTransfer();
+                    (input.multiple ? imagens : imagens.slice(0, 1)).forEach(arquivo => arquivos.items.add(arquivo));
+                    // Mantém o input nativo como fonte única para preview e envio por FormData.
+                    input.files = arquivos.files;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            });
         }
 
         function fecharEditorVariante(event) { if (!event || event.target.id === 'variantEditor') document.getElementById('variantEditor').classList.remove('open'); }
@@ -812,6 +878,7 @@
             }
         }
 
+        configurarAreasUpload();
         setInterval(() => { carregarPainelUnificado(); carregarGraficosRelatorios(); }, 5000);
         carregarPainelUnificado(); carregarEstoque(); carregarGraficosRelatorios(); adicionarLinhaCor('cad_color_rows');
     </script>
