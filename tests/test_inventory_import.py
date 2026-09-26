@@ -1,7 +1,9 @@
 import json
+import sys
 
 from app import create_app, db
-from app.models import Produto
+from app.models import ImportacaoEstoque, Produto
+from scripts import importar_estoque
 from scripts.importar_estoque import criar_produto_sem_cadastro, ler_inventario, planejar_importacao
 from app.routes import chave_cor, cor_para_hex, nome_cor, variantes_com_cor_hex
 
@@ -79,3 +81,23 @@ def test_vitrine_mostra_placeholder_para_produto_sem_imagem(monkeypatch):
     assert resposta.status_code == 200
     assert 'Foto não cadastrada' in html
     assert 'src="/static/"' not in html
+
+
+def test_apply_cria_38_produtos_e_nao_duplica_na_reexecucao(monkeypatch):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+    monkeypatch.setattr(importar_estoque, 'create_app', lambda: app)
+    monkeypatch.setattr(sys, 'argv', ['scripts.importar_estoque', '--apply'])
+
+    assert importar_estoque.main() == 0
+    with app.app_context():
+        assert Produto.query.count() == 38
+        produto = Produto.query.filter_by(codigo='056').one()
+        assert produto.preco == 0
+        assert produto.imagem_url == ''
+        assert ImportacaoEstoque.query.count() == 1
+
+    assert importar_estoque.main() == 0
+    with app.app_context():
+        assert Produto.query.count() == 38
