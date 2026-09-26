@@ -125,7 +125,11 @@ def montar_variantes(produto, item):
         for cor, quantidade in cores.items():
             tamanhos = variantes.setdefault(cor, [])
             chave_preco = (texto_chave(cor), texto_chave(nome_tamanho))
-            preco = precos_anteriores.get(chave_preco) or precos_por_tamanho.get(texto_chave(nome_tamanho)) or produto.preco
+            preco = precos_anteriores.get(chave_preco)
+            if preco is None:
+                preco = precos_por_tamanho.get(texto_chave(nome_tamanho))
+            if preco is None:
+                preco = produto.preco
             tamanhos.append({
                 'nome': nome_tamanho,
                 'estoque': quantidade,
@@ -133,6 +137,51 @@ def montar_variantes(produto, item):
             })
 
     return [{'cor': cor, 'tamanhos': tamanhos} for cor, tamanhos in variantes.items()]
+
+
+def aplicar_estoque_produto(produto, item):
+    variantes = montar_variantes(produto, item)
+    produto.variantes = json.dumps(variantes, ensure_ascii=False)
+    produto.cores = json.dumps([variante['cor'] for variante in variantes], ensure_ascii=False)
+    produto.grade = json.dumps(variantes[0]['tamanhos'] if variantes else [], ensure_ascii=False)
+    for tamanho in ('p', 'm', 'g', 'gg'):
+        tamanhos_resumo = {'gg', 'gg2'} if tamanho == 'gg' else {tamanho}
+        setattr(produto, f'estoque_{tamanho}', sum(
+            int(item_tamanho['estoque'])
+            for variante in variantes
+            for item_tamanho in variante['tamanhos']
+            if item_tamanho['nome'].casefold() in tamanhos_resumo
+        ))
+
+
+def criar_produto_sem_cadastro(item):
+    produto = Produto(
+        codigo=item['referencia'],
+        nome=item['nome'],
+        preco=0.0,
+        etiqueta='NOVO',
+        imagem_url='',
+        estoque_p=0,
+        estoque_m=0,
+        estoque_g=0,
+        estoque_gg=0,
+    )
+    aplicar_estoque_produto(produto, item)
+    return produto
+
+
+def planejar_importacao(produtos_db, inventario):
+    correspondencias = []
+    problemas = []
+    for item in inventario:
+        produto, metodo = localizar_produto(produtos_db, item)
+        if produto is None and metodo == 'produto ausente':
+            correspondencias.append((item, None, 'novo produto'))
+        elif produto is None:
+            problemas.append(f"Ref {item['referencia']} ({item['nome']}): {metodo}.")
+        else:
+            correspondencias.append((item, produto, metodo))
+    return correspondencias, problemas
 
 
 def main():
@@ -148,18 +197,12 @@ def main():
             return 0
 
         produtos_db = Produto.query.all()
-        correspondencias = []
-        problemas = []
-        for item in inventario:
-            produto, metodo = localizar_produto(produtos_db, item)
-            if produto is None:
-                problemas.append(f"Ref {item['referencia']} ({item['nome']}): {metodo}.")
-            else:
-                correspondencias.append((item, produto, metodo))
+        correspondencias, problemas = planejar_importacao(produtos_db, inventario)
 
         print(f'Produtos na importacao: {len(inventario)}')
         for item, produto, metodo in correspondencias:
-            print(f"Ref {item['referencia']} -> {produto.codigo or '(sem codigo)'} / {produto.nome} [{metodo}]")
+            destino = f"{produto.codigo or '(sem codigo)'} / {produto.nome}" if produto else f"{item['referencia']} / {item['nome']} (R$ 0,00; sem imagem)"
+            print(f"Ref {item['referencia']} -> {destino} [{metodo}]")
         if problemas:
             print('Importacao cancelada; referencias sem correspondencia unica:')
             for problema in problemas:
@@ -172,17 +215,11 @@ def main():
 
         try:
             for item, produto, _ in correspondencias:
-                variantes = montar_variantes(produto, item)
-                produto.variantes = json.dumps(variantes, ensure_ascii=False)
-                produto.cores = json.dumps([variante['cor'] for variante in variantes], ensure_ascii=False)
-                produto.grade = json.dumps(variantes[0]['tamanhos'] if variantes else [], ensure_ascii=False)
-                for tamanho in ('p', 'm', 'g', 'gg'):
-                    setattr(produto, f'estoque_{tamanho}', sum(
-                        int(item_tamanho['estoque'])
-                        for variante in variantes
-                        for item_tamanho in variante['tamanhos']
-                        if item_tamanho['nome'].casefold() == tamanho.upper().casefold()
-                    ))
+                if produto is None:
+                    produto = criar_produto_sem_cadastro(item)
+                    db.session.add(produto)
+                else:
+                    aplicar_estoque_produto(produto, item)
 
             db.session.add(ImportacaoEstoque(chave=IMPORT_KEY))
             db.session.commit()

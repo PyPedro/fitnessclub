@@ -90,7 +90,11 @@
             {% for p in produtos.items %}
             <div class="product-card">
                 <div class="product-img-wrapper product-gallery">
+                    {% if p.imagem_url %}
                     <img class="product-main-image" src="{{ url_for('static', filename=imagem_variacao(p.imagem_url, 'gallery')) }}" alt="{{ p.nome }}" loading="lazy" decoding="async">
+                    {% else %}
+                    <div class="product-image-placeholder" role="img" aria-label="{{ p.nome }} sem foto cadastrada"><span>Foto não cadastrada</span></div>
+                    {% endif %}
                     {% if p.imagens %}
                     {% set total_imagens = p.imagens|length + 1 %}
                     <button type="button" class="gallery-arrow gallery-arrow-prev" aria-label="Imagem anterior" onpointerenter="precarregarImagemGaleria(this, -1)" onclick="navegarGaleria(this, -1)">‹</button>
@@ -114,7 +118,7 @@
                     {% if p.cores_config %}<div class="product-colors" aria-label="Cores disponíveis">{% for cor in p.cores_config %}<span class="product-color-swatch" title="{{ nome_cor(cor) }}"><span class="product-color-dot" style="--swatch-color: {{ cor_hex(cor) }}"></span><span>{{ nome_cor(cor) }}</span></span>{% endfor %}</div>{% endif %}
                     <div class="product-price">A partir de R$ {{ "%.2f"|format(p.preco) | replace('.', ',') }} <span style="font-size: 10px; color: #777; font-weight: 400;">(Atacado)</span></div>
                     
-                    <button class="btn-add-minimal" onclick='abrirModalGrade({{ p.id }}, {{ p.nome|tojson }}, {{ variantes_com_cor_hex(p.variantes_config)|tojson }}, {{ url_for("static", filename=p.imagem_url)|tojson }})'>
+                    <button class="btn-add-minimal" onclick='abrirModalGrade({{ p.id }}, {{ p.nome|tojson }}, {{ variantes_com_cor_hex(p.variantes_config)|tojson }}, {{ (url_for("static", filename=p.imagem_url) if p.imagem_url else "")|tojson }})'>
                         Montar Grade
                     </button>
                 </div>

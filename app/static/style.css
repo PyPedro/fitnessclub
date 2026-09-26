@@ -212,6 +212,7 @@ body {
     background: #e7e0d7;
     overflow: hidden;
 }
+.product-image-placeholder { width: 100%; height: 100%; display: grid; place-items: center; background: #f0edf1; color: var(--text-muted); font-size: 11px; }
 
 .product-img-wrapper img {
     width: 100%;

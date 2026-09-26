@@ -21,13 +21,13 @@ Depois de publicar o código, abra o Shell do serviço Web no Render e execute p
 python -m scripts.importar_estoque
 ```
 
-O comando confere as 38 referências com o catálogo existente e não grava dados. Se alguma referência estiver ausente ou ambígua, a importação é cancelada; corrija o cadastro/código do produto antes de continuar. Quando todas as correspondências estiverem corretas, execute uma única vez:
+O comando confere as 38 referências com o catálogo existente e não grava dados. Referências existentes são atualizadas; produtos ausentes são planejados para criação. Referências ambíguas interrompem a carga. Produtos novos serão publicados na vitrine com preço `R$ 0,00`, sem imagem própria, e com um placeholder até que os dados sejam completados. Após conferir a lista de correspondências/criações, execute uma única vez:
 
 ```powershell
 python -m scripts.importar_estoque --apply
 ```
 
-A carga atualiza cores, tamanhos e quantidades, preserva nomes, imagens e preços existentes, e registra sua execução para impedir reaplicação acidental.
+A carga atualiza cores, tamanhos e quantidades, preserva imagens e preços de produtos existentes, cria os ausentes com preço zero e sem imagem, e registra sua execução para impedir reaplicação acidental.
 
 ## Persistência e pagamentos
 

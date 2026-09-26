@@ -1,4 +1,8 @@
-from scripts.importar_estoque import ler_inventario
+import json
+
+from app import create_app, db
+from app.models import Produto
+from scripts.importar_estoque import criar_produto_sem_cadastro, ler_inventario, planejar_importacao
 from app.routes import chave_cor, cor_para_hex, nome_cor, variantes_com_cor_hex
 
 
@@ -33,3 +37,45 @@ def test_cores_nomeadas_preservam_cor_de_pedidos_legados():
     assert variante['cor'] == 'Azul marinho'
     assert variante['cor_hex'] == '#172b4d'
     assert variante['cor_nome'] == 'Azul marinho'
+
+
+def test_cria_produto_novo_com_preco_zero_sem_imagem_e_grade_completa():
+    inventario = {item['referencia']: item for item in ler_inventario()}
+    produto = criar_produto_sem_cadastro(inventario['366'])
+
+    assert produto.codigo == '366'
+    assert produto.nome == 'Short duplo plus size'
+    assert produto.preco == 0
+    assert produto.imagem_url == ''
+    assert produto.estoque_gg == 19
+    assert {'cor': 'Branco', 'tamanhos': [{'nome': 'GG2', 'estoque': 19, 'preco': 0.0}]} in json.loads(produto.variantes)
+
+
+def test_catalogo_vazio_planeja_criacao_das_38_referencias():
+    correspondencias, problemas = planejar_importacao([], ler_inventario())
+
+    assert len(correspondencias) == 38
+    assert not problemas
+    assert all(produto is None and metodo == 'novo produto' for _, produto, metodo in correspondencias)
+
+
+def test_vitrine_mostra_placeholder_para_produto_sem_imagem(monkeypatch):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    with app.app_context():
+        db.session.add(Produto(
+            codigo='473',
+            nome='Conj short saia e top',
+            preco=0,
+            etiqueta='NOVO',
+            imagem_url='',
+            cores=json.dumps(['Azul marinho']),
+            variantes=json.dumps([{'cor': 'Azul marinho', 'tamanhos': [{'nome': 'M', 'estoque': 7, 'preco': 0}]}]),
+        ))
+        db.session.commit()
+
+    resposta = app.test_client().get('/')
+    html = resposta.get_data(as_text=True)
+    assert resposta.status_code == 200
+    assert 'Foto não cadastrada' in html
+    assert 'src="/static/"' not in html
