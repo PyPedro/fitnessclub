@@ -596,12 +596,31 @@ body {
 .grade-modal-shell {
     position: relative;
     width: min(520px, 92vw);
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    overflow-x: hidden;
     background: rgba(255, 255, 255, 0.97);
     border: 1px solid rgba(19, 19, 19, 0.08);
     border-radius: 18px;
     box-shadow: 0 28px 60px rgba(15, 15, 20, 0.2);
     padding: 22px 20px 18px;
     animation: fadeIn 0.22s ease;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(105, 105, 110, 0.5) transparent;
+}
+
+.grade-modal-shell::-webkit-scrollbar {
+    width: 8px;
+}
+
+.grade-modal-shell::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.grade-modal-shell::-webkit-scrollbar-thumb {
+    background: rgba(105, 105, 110, 0.45);
+    border-radius: 999px;
 }
 
 .grade-modal-close {
