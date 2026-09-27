@@ -71,4 +71,22 @@ def create_app():
             if 'variantes' not in colunas_produto:
                 conexao.execute(text('ALTER TABLE produto ADD COLUMN variantes TEXT'))
 
+        duplicados = db.session.execute(text(
+            "SELECT lower(trim(codigo)), COUNT(*) FROM produto "
+            "WHERE codigo IS NOT NULL AND trim(codigo) <> '' "
+            "GROUP BY lower(trim(codigo)) HAVING COUNT(*) > 1"
+        )).all()
+        if duplicados:
+            app.logger.warning('Indice de referencia unica nao criado: existem referencias duplicadas legadas.')
+        else:
+            try:
+                with db.engine.begin() as conexao:
+                    conexao.execute(text(
+                        'CREATE UNIQUE INDEX IF NOT EXISTS uq_produto_codigo_normalizado '
+                        'ON produto (lower(trim(codigo))) '
+                        "WHERE codigo IS NOT NULL AND trim(codigo) <> ''"
+                    ))
+            except Exception:
+                app.logger.exception('Nao foi possivel criar o indice unico de referencias de produto.')
+
     return app

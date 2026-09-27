@@ -144,6 +144,17 @@
         .stock-size-value { padding: 5px 7px; border: 1px solid var(--border); border-radius: 5px; background: #fff; color: var(--text-main); font-size: 11px; white-space: nowrap; }
         .stock-product-actions { display: flex; justify-content: flex-end; gap: 7px; padding-top: 10px; }
         .stock-product-actions .btn-primary { min-width: 38px; min-height: 38px; padding: 7px 10px; box-shadow: none; }
+        .stock-search { margin-bottom: 10px; }
+        .stock-search label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+        .stock-search input { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 7px; background: #fff; color: var(--text-main); font: inherit; font-size: 13px; }
+        .stock-search input:focus { outline: 2px solid rgba(37,99,235,.22); border-color: var(--brand-blue); }
+        .stock-empty { padding: 18px 12px; color: var(--text-muted); text-align: center; font-size: 12px; }
+        .image-dropzone { position: relative; display: grid; justify-items: center; gap: 7px; min-height: 104px; padding: 18px; border: 1.5px dashed var(--border); border-radius: 7px; background: #f8fafc; color: var(--text-muted); text-align: center; font-size: 12px; cursor: pointer; transition: border-color .18s, background .18s, color .18s; }
+        .image-dropzone:hover, .image-dropzone.is-dragging, .image-dropzone:focus-within { border-color: var(--brand-blue); background: #eff6ff; color: var(--text-main); }
+        .image-dropzone svg { width: 25px; height: 25px; color: var(--brand-blue); }
+        .image-dropzone-copy { overflow-wrap: anywhere; }
+        .image-dropzone-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+        .product-save-button:disabled { opacity: .7; cursor: wait; transform: none; }
         @media (min-width: 700px) {
             .stock-product-summary { grid-template-columns: 70px minmax(0, 1fr) minmax(110px, auto) 18px; padding: 13px 16px; }
             .stock-product-meta { margin: 0; text-align: right; }
@@ -280,7 +291,9 @@
             <h2 style="margin: 0; font-size: 18px; font-weight: 700;">Catálogo e Grade Física</h2>
             <button class="btn-primary" onclick="document.getElementById('modalNovoProduto').style.display='flex'">+ Novo Produto</button>
         </div>
+        <div class="stock-search"><label for="estoque-busca">Buscar produto por código ou nome</label><input id="estoque-busca" type="search" placeholder="Buscar por código ou produto" autocomplete="off" oninput="filtrarEstoque()" aria-controls="estoque-lista"></div>
         <div id="estoque-lista" class="stock-product-list" aria-label="Produtos e estoque"></div>
+        <p id="estoque-sem-resultados" class="stock-empty" hidden>Nenhum produto cadastrado.</p>
     </div>
 
     <!-- PÁGINA 4: IMAGENS DO SITE -->
@@ -357,9 +370,9 @@
                 <div class="form-group"><label>Preço único (R$)</label><input type="number" id="cad_preco" step="0.01" min="0.01" class="form-control" placeholder="Igual para todos os tamanhos"></div>
             </div>
             <div class="form-group"><label>Nome do Produto</label><input type="text" id="cad_nome" required class="form-control" placeholder="Nome completo da peça"></div>
-            <div class="form-group"><label>Fotos do Produto (obrigatório, selecione várias)</label><input type="file" id="cad_img" accept="image/*" multiple required class="form-control" style="background: #fff; padding: 9px;"></div>
+            <div class="form-group"><label>Fotos do Produto (obrigatório)</label><label class="image-dropzone" for="cad_img" data-default-text="Arraste as imagens aqui ou clique para procurar"><input type="file" id="cad_img" accept="image/*" multiple required class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste as imagens aqui ou clique para procurar</span></label></div>
             <div class="form-group variant-builder"><div class="builder-heading"><label>Cores</label><span>Escolha a cor pelo nome e configure os tamanhos</span></div><div id="cad_color_rows" class="custom-color-list"></div><button type="button" class="add-inline" onclick="adicionarLinhaCor('cad_color_rows')">+ Cor</button></div>
-            <button onclick="salvarNovoProduto()" class="btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 14px; margin-top: 10px;">Finalizar Cadastro</button>
+            <button id="cad_salvar" type="button" onclick="salvarNovoProduto()" class="btn-primary product-save-button" style="width: 100%; justify-content: center; padding: 14px; font-size: 14px; margin-top: 10px;">Finalizar Cadastro</button>
         </div>
     </div>
 
@@ -377,7 +390,7 @@
             <div class="form-group"><label>Substituir capa principal</label><label class="image-dropzone" for="edit_capa" data-default-text="Arraste suas imagens aqui ou clique para procurar"><input type="file" id="edit_capa" accept="image/*" class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste suas imagens aqui ou clique para procurar</span></label></div>
             <div class="form-group"><label>Adicionar fotos (deixe em branco para manter as atuais)</label><label class="image-dropzone" for="edit_img" data-default-text="Arraste suas imagens aqui ou clique para procurar"><input type="file" id="edit_img" accept="image/*" multiple class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste suas imagens aqui ou clique para procurar</span></label></div>
             <div class="form-group variant-builder"><div class="builder-heading"><label>Cores</label><span>Escolha a cor pelo nome e configure os tamanhos</span></div><div id="edit_color_rows" class="custom-color-list"></div><button type="button" class="add-inline" onclick="adicionarLinhaCor('edit_color_rows')">+ Cor</button></div>
-            <button onclick="salvarEdicaoProduto()" class="btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 14px; margin-top: 10px;">Salvar Alterações</button>
+            <button id="edit_salvar" type="button" onclick="salvarEdicaoProduto()" class="btn-primary product-save-button" style="width: 100%; justify-content: center; padding: 14px; font-size: 14px; margin-top: 10px;">Salvar Alterações</button>
         </div>
     </div>
 
@@ -688,12 +701,28 @@
                 document.getElementById('estoque-lista').innerHTML = data.map(p => {
                     bancoDeProdutos[p.id] = p;
                     const variantes = p.variantes || [];
+                    const termoBusca = escaparHtml(`${p.codigo || ''} ${p.nome || ''}`.trim());
                     const variantesHtml = variantes.map(variante => `<div class="stock-variant"><span class="stock-color-name"><span class="stock-color-swatch" style="--swatch-color:${escaparHtml(variante.cor_hex || corHexEditor(variante.cor))}"></span>${escaparHtml(variante.cor_nome || variante.cor || 'Cor não definida')}</span><span class="stock-size-list">${(variante.tamanhos || []).map(tamanho => `<span class="stock-size-value">${escaparHtml(tamanho.nome)}: ${Number(tamanho.estoque) || 0}</span>`).join('')}</span></div>`).join('');
                     const totalEstoque = variantes.reduce((total, variante) => total + (variante.tamanhos || []).reduce((soma, tamanho) => soma + (Number(tamanho.estoque) || 0), 0), 0);
                     const resumo = `${variantes.length} ${variantes.length === 1 ? 'cor' : 'cores'} · ${totalEstoque} ${totalEstoque === 1 ? 'peça' : 'peças'}`;
-                    return `<details class="stock-product"><summary class="stock-product-summary"><span class="stock-product-code">${escaparHtml(p.codigo || '-')}</span><span class="stock-product-heading"><span class="stock-product-name">${escaparHtml(p.nome)}</span><span class="stock-product-meta">${resumo}</span></span><span class="stock-product-meta stock-product-desktop-meta">Ver estoque</span><svg class="stock-product-chevron" aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary><div class="stock-product-content"><div class="stock-variant-list">${variantesHtml || '<span class="stock-size-value">Sem grade cadastrada</span>'}</div><div class="stock-product-actions"><button type="button" onclick="abrirModalEditarProduto(${p.id})" class="btn-primary" style="background: var(--warning);" title="Editar produto" aria-label="Editar produto ${escaparHtml(p.codigo || '')}">✏️</button><button type="button" onclick="excluirProduto(${p.id})" class="btn-primary" style="background: var(--danger);" title="Excluir produto" aria-label="Excluir produto ${escaparHtml(p.codigo || '')}">🗑️</button></div></div></details>`
+                    return `<details class="stock-product" data-search="${termoBusca}"><summary class="stock-product-summary"><span class="stock-product-code">${escaparHtml(p.codigo || '-')}</span><span class="stock-product-heading"><span class="stock-product-name">${escaparHtml(p.nome)}</span><span class="stock-product-meta">${resumo}</span></span><span class="stock-product-meta stock-product-desktop-meta">Ver estoque</span><svg class="stock-product-chevron" aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary><div class="stock-product-content"><div class="stock-variant-list">${variantesHtml || '<span class="stock-size-value">Sem grade cadastrada</span>'}</div><div class="stock-product-actions"><button type="button" onclick="abrirModalEditarProduto(${p.id})" class="btn-primary" style="background: var(--warning);" title="Editar produto" aria-label="Editar produto ${escaparHtml(p.codigo || '')}">✏️</button><button type="button" onclick="excluirProduto(${p.id})" class="btn-primary" style="background: var(--danger);" title="Excluir produto" aria-label="Excluir produto ${escaparHtml(p.codigo || '')}">🗑️</button></div></div></details>`
                 }).join('');
+                filtrarEstoque();
             });
+        }
+
+        function filtrarEstoque() {
+            const termo = document.getElementById('estoque-busca').value.trim().toLocaleLowerCase('pt-BR');
+            const produtos = Array.from(document.querySelectorAll('#estoque-lista .stock-product'));
+            let encontrados = 0;
+            produtos.forEach(produto => {
+                const corresponde = produto.dataset.search.toLocaleLowerCase('pt-BR').includes(termo);
+                produto.hidden = !corresponde;
+                if (corresponde) encontrados++;
+            });
+            const mensagem = document.getElementById('estoque-sem-resultados');
+            mensagem.hidden = encontrados > 0;
+            mensagem.textContent = termo ? 'Nenhum produto encontrado.' : 'Nenhum produto cadastrado.';
         }
 
         function carregarAdministradores() {
@@ -906,6 +935,8 @@
         }
 
         function salvarNovoProduto() {
+            const botaoSalvar = document.getElementById('cad_salvar');
+            if (botaoSalvar.disabled) return;
             const formData = new FormData();
             const codigo = document.getElementById('cad_codigo').value.trim(); const nome = document.getElementById('cad_nome').value.trim(); const arquivos = document.getElementById('cad_img').files;
             const precoUnico = document.getElementById('cad_preco').value;
@@ -914,9 +945,14 @@
             formData.append('codigo', codigo); formData.append('nome', nome); formData.append('preco', precoUnico); formData.append('grade', JSON.stringify(variantes[0].tamanhos)); formData.append('cores', JSON.stringify(variantes.map(variante => variante.cor))); formData.append('variantes', JSON.stringify(variantes));
             const fileInput = document.getElementById('cad_img'); Array.from(fileInput.files).forEach(file => formData.append('imagens', file));
 
+            botaoSalvar.disabled = true;
+            botaoSalvar.textContent = 'Salvando...';
             fetch('/api/admin/produtos/cadastrar', { method: 'POST', body: formData }).then(r => r.json()).then(d => {
-                if(d.sucesso) { document.getElementById('modalNovoProduto').style.display = 'none'; ['cad_codigo', 'cad_nome', 'cad_preco', 'cad_img'].forEach(id => document.getElementById(id).value = ''); variantesEditor.cad = []; adicionarLinhaCor('cad_color_rows'); carregarEstoque(); carregarPainelUnificado(); } 
-                else alert(d.mensagem || "Erro ao cadastrar.");
+                if(d.sucesso) { document.getElementById('modalNovoProduto').style.display = 'none'; ['cad_codigo', 'cad_nome', 'cad_preco', 'cad_img'].forEach(id => document.getElementById(id).value = ''); fileInput.dispatchEvent(new Event('change', { bubbles: true })); variantesEditor.cad = []; adicionarLinhaCor('cad_color_rows'); carregarEstoque(); carregarPainelUnificado(); }
+                else alert(d.mensagem || 'Erro ao cadastrar.');
+            }).catch(() => alert('Erro de comunicação ao cadastrar o produto.')).finally(() => {
+                botaoSalvar.disabled = false;
+                botaoSalvar.textContent = 'Finalizar Cadastro';
             });
         }
 
@@ -934,15 +970,22 @@
         }
 
         function salvarEdicaoProduto() {
+            const botaoSalvar = document.getElementById('edit_salvar');
+            if (botaoSalvar.disabled) return;
             const id = document.getElementById('edit_id').value;
             const formData = new FormData();
             formData.append('codigo', document.getElementById('edit_codigo').value); formData.append('nome', document.getElementById('edit_nome').value); formData.append('preco', document.getElementById('edit_preco').value); formData.append('grade', JSON.stringify(variantesEditor.edit[0]?.tamanhos || [])); formData.append('cores', JSON.stringify(variantesEditor.edit.map(variante => variante.cor))); formData.append('variantes', JSON.stringify(lerVariantes('edit')));
             const fileInput = document.getElementById('edit_img'); Array.from(fileInput.files).forEach(file => formData.append('imagens', file));
             const capaInput = document.getElementById('edit_capa'); if (capaInput.files[0]) formData.append('capa', capaInput.files[0]);
 
+            botaoSalvar.disabled = true;
+            botaoSalvar.textContent = 'Salvando...';
             fetch(`/api/admin/produtos/editar/${id}`, { method: 'POST', body: formData }).then(r => r.json()).then(d => {
-                if(d.sucesso) { document.getElementById('modalEditarProduto').style.display = 'none'; carregarEstoque(); carregarPainelUnificado(); } 
-                else alert("Erro ao editar.");
+                if(d.sucesso) { document.getElementById('modalEditarProduto').style.display = 'none'; carregarEstoque(); carregarPainelUnificado(); }
+                else alert(d.mensagem || 'Erro ao editar.');
+            }).catch(() => alert('Erro de comunicação ao editar o produto.')).finally(() => {
+                botaoSalvar.disabled = false;
+                botaoSalvar.textContent = 'Salvar Alterações';
             });
         }
 

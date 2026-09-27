@@ -6,7 +6,8 @@ from app import db
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from sqlalchemy import or_
+from sqlalchemy import or_, text
+from sqlalchemy.exc import IntegrityError
 import requests
 import json
 import re
@@ -60,6 +61,21 @@ def chave_cor(cor):
     if nome.startswith('Personalizada ('):
         return str(cor).strip().casefold()
     return nome.casefold()
+
+
+def referencia_em_uso(codigo, ignorar_id=None):
+    codigo_normalizado = str(codigo or '').strip().casefold()
+    if not codigo_normalizado:
+        return False
+    if db.engine.dialect.name == 'postgresql':
+        db.session.execute(
+            text('SELECT pg_advisory_xact_lock(hashtext(:codigo))'),
+            {'codigo': codigo_normalizado},
+        )
+    consulta = Produto.query.filter(db.func.lower(db.func.trim(Produto.codigo)) == codigo_normalizado)
+    if ignorar_id is not None:
+        consulta = consulta.filter(Produto.id != ignorar_id)
+    return consulta.first() is not None
 
 
 def variantes_com_cor_hex(variantes):
@@ -414,6 +430,8 @@ def api_admin_cadastrar_produto():
     try:
         codigo = request.form.get('codigo', '').strip()
         nome = request.form.get('nome', '').strip()
+        if referencia_em_uso(codigo):
+            return jsonify({"sucesso": False, "mensagem": f"A referência {codigo} já está cadastrada."}), 409
         arquivos = [arquivo for arquivo in request.files.getlist('imagens') if arquivo and arquivo.filename]
         precos = ler_precos_formulario(request.form)
         try:
@@ -453,6 +471,9 @@ def api_admin_cadastrar_produto():
         salvar_imagens_produto(novo_produto, arquivos)
         db.session.commit()
         return jsonify({"sucesso": True})
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"sucesso": False, "mensagem": "Esta referência já foi cadastrada. Atualize a lista de estoque."}), 409
     except Exception as e:
         db.session.rollback()
         return jsonify({"sucesso": False, "mensagem": str(e)})
@@ -464,7 +485,10 @@ def api_admin_editar_produto(id):
         prod = Produto.query.get(id)
         if not prod: return jsonify({"sucesso": False, "mensagem": "Produto não encontrado."})
 
-        prod.codigo = request.form.get('codigo', prod.codigo)
+        codigo_novo = request.form.get('codigo', prod.codigo).strip()
+        if referencia_em_uso(codigo_novo, ignorar_id=prod.id):
+            return jsonify({"sucesso": False, "mensagem": f"A referência {codigo_novo} já está cadastrada em outro produto."}), 409
+        prod.codigo = codigo_novo
         prod.nome = request.form.get('nome', prod.nome)
         if request.form.get('preco'):
             prod.preco = float(request.form.get('preco'))
@@ -499,6 +523,9 @@ def api_admin_editar_produto(id):
 
         db.session.commit()
         return jsonify({"sucesso": True})
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"sucesso": False, "mensagem": "Esta referência já está cadastrada em outro produto."}), 409
     except Exception as e:
         db.session.rollback()
         return jsonify({"sucesso": False, "mensagem": str(e)})

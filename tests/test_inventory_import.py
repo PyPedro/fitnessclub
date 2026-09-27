@@ -1,6 +1,9 @@
 import json
 import sys
 
+import pytest
+from sqlalchemy.exc import IntegrityError
+
 from app import create_app, db
 from app.models import ImportacaoEstoque, Produto
 from scripts import importar_estoque
@@ -101,3 +104,39 @@ def test_apply_cria_38_produtos_e_nao_duplica_na_reexecucao(monkeypatch):
     assert importar_estoque.main() == 0
     with app.app_context():
         assert Produto.query.count() == 38
+
+
+def test_api_impede_referencia_duplicada_no_cadastro_e_na_edicao(monkeypatch):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+    with app.app_context():
+        db.session.add_all([
+            Produto(codigo='REF-10', nome='Produto 10', preco=10, etiqueta='TESTE', imagem_url=''),
+            Produto(codigo='REF-20', nome='Produto 20', preco=10, etiqueta='TESTE', imagem_url=''),
+        ])
+        db.session.commit()
+
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin_logado'] = True
+        cadastro = client.post('/api/admin/produtos/cadastrar', data={'codigo': ' ref-10 ', 'nome': 'Cópia'})
+        edicao = client.post('/api/admin/produtos/editar/2', data={'codigo': 'REF-10', 'nome': 'Produto 20'})
+
+    assert cadastro.status_code == 409
+    assert cadastro.get_json()['sucesso'] is False
+    assert edicao.status_code == 409
+    assert edicao.get_json()['sucesso'] is False
+
+
+def test_indice_unico_do_banco_bloqueia_referencia_com_caixa_diferente(monkeypatch):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    with app.app_context():
+        db.session.add(Produto(codigo='REF-30', nome='Produto 30', preco=10, etiqueta='TESTE', imagem_url=''))
+        db.session.commit()
+        db.session.add(Produto(codigo='ref-30', nome='Duplicado', preco=10, etiqueta='TESTE', imagem_url=''))
+        with pytest.raises(IntegrityError):
+            db.session.commit()
+        db.session.rollback()
+        assert Produto.query.count() == 1
