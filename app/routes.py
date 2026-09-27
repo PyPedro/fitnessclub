@@ -150,6 +150,12 @@ def salvar_imagens_produto(produto, arquivos):
             db.session.add(ProdutoImagem(produto=produto, imagem_url=caminho, ordem=ordem))
             ordem += 1
 
+
+def imagem_produto_para_url(imagem):
+    if isinstance(imagem, dict):
+        return imagem.get('url') or imagem.get('imagem_url')
+    return imagem
+
 def salvar_arquivo_imagem(arquivo):
     validar_arquivos_imagem([arquivo])
     filename = secure_filename(arquivo.filename)
@@ -413,13 +419,36 @@ def api_admin_atualizar_status_pedido():
 def api_admin_produtos():
     if not session.get('admin_logado'): return jsonify([])
     produtos = Produto.query.all()
-    # Adicionado preco e imagem_url para a função de Edição no Frontend
     return jsonify([{
         "id": p.id, "codigo": p.codigo, "nome": p.nome, "preco": p.preco,
         "precos": {tamanho: preco_tamanho(p, tamanho) for tamanho in ('P', 'M', 'G', 'GG')}, "grade": grade_do_produto(p), "cores": p.cores_config, "variantes": variantes_com_cor_hex(variantes_do_produto(p)), "imagem_url": p.imagem_url,
-        "imagens": [imagem.imagem_url for imagem in p.imagens],
+        "imagens": [{"id": imagem.id, "url": imagem.imagem_url} for imagem in p.imagens],
         "p": p.estoque_p, "m": p.estoque_m, "g": p.estoque_g, "gg": p.estoque_gg
     } for p in produtos])
+
+@main_bp.route('/api/admin/importar-estoque', methods=['POST'])
+def api_admin_importar_estoque():
+    if not session.get('admin_logado'):
+        return jsonify({"sucesso": False, "mensagem": "Não autorizado."}), 401
+    try:
+        from scripts.importar_estoque import executar_importacao
+        resultado = executar_importacao(app=current_app._get_current_object(), aplicar=True)
+    except Exception as erro:
+        return jsonify({"sucesso": False, "mensagem": f"Erro ao importar estoque: {erro}"}), 500
+
+    if not resultado.get('sucesso'):
+        return jsonify({
+            "sucesso": False,
+            "mensagem": resultado.get('mensagem', 'Não foi possível importar o estoque.'),
+            "problemas": resultado.get('problemas', []),
+        }), 400
+
+    return jsonify({
+        "sucesso": True,
+        "mensagem": resultado.get('mensagem', 'Importação concluída.'),
+        "produtos": resultado.get('produtos', 0),
+        "importada": resultado.get('importada', True),
+    })
 
 @main_bp.route('/api/admin/imagens-site')
 def api_admin_imagens_site():
@@ -566,6 +595,26 @@ def api_admin_editar_produto(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"sucesso": False, "mensagem": str(e)})
+
+@main_bp.route('/api/admin/produtos/<int:produto_id>/imagens/<int:imagem_id>/excluir', methods=['POST'])
+def api_admin_excluir_imagem_produto(produto_id, imagem_id):
+    if not session.get('admin_logado'):
+        return jsonify({"sucesso": False, "mensagem": "Não autorizado."}), 401
+    produto = Produto.query.get(produto_id)
+    if not produto:
+        return jsonify({"sucesso": False, "mensagem": "Produto não encontrado."}), 404
+    imagem = ProdutoImagem.query.filter_by(id=imagem_id, produto_id=produto_id).first()
+    if not imagem:
+        return jsonify({"sucesso": False, "mensagem": "Imagem não encontrada."}), 404
+
+    if produto.imagem_url == imagem.imagem_url:
+        restantes = [item for item in produto.imagens if item.id != imagem_id]
+        produto.imagem_url = restantes[0].imagem_url if restantes else 'img/default.jpg'
+
+    db.session.delete(imagem)
+    db.session.commit()
+    return jsonify({"sucesso": True, "imagem_url": produto.imagem_url})
+
 
 @main_bp.route('/api/admin/produtos/excluir/<int:id>', methods=['POST'])
 def api_admin_excluir_produto(id):

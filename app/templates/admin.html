@@ -293,9 +293,12 @@
 
     <!-- PÁGINA 3: ESTOQUE -->
     <div id="page-estoque" class="page-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
             <h2 style="margin: 0; font-size: 18px; font-weight: 700;">Catálogo e Grade Física</h2>
-            <button class="btn-primary" onclick="document.getElementById('modalNovoProduto').style.display='flex'">+ Novo Produto</button>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button class="btn-primary btn-outline" onclick="importarEstoqueEmLote()">📥 Importação em lote</button>
+                <button class="btn-primary" onclick="document.getElementById('modalNovoProduto').style.display='flex'">+ Novo Produto</button>
+            </div>
         </div>
         <div class="stock-search"><label for="estoque-busca">Buscar produto por código ou nome</label><input id="estoque-busca" type="search" placeholder="Buscar por código ou produto" autocomplete="off" oninput="filtrarEstoque()" aria-controls="estoque-lista"></div>
         <div id="estoque-lista" class="stock-product-list" aria-label="Produtos e estoque"></div>
@@ -376,7 +379,7 @@
                 <div class="form-group"><label>Preço único (R$)</label><input type="number" id="cad_preco" step="0.01" min="0.01" class="form-control" placeholder="Igual para todos os tamanhos"></div>
             </div>
             <div class="form-group"><label>Nome do Produto</label><input type="text" id="cad_nome" required class="form-control" placeholder="Nome completo da peça"></div>
-            <div class="form-group"><label>Fotos do Produto (obrigatório)</label><label class="image-dropzone" for="cad_img" data-default-text="Arraste as imagens aqui ou clique para procurar"><input type="file" id="cad_img" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" multiple required class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste as imagens aqui ou clique para procurar</span></label></div>
+            <div class="form-group"><label>Fotos do Produto (obrigatório)</label><label class="image-dropzone" for="cad_img" data-default-text="Arraste as imagens aqui ou clique para procurar"><input type="file" id="cad_img" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" multiple required class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste as imagens aqui ou clique para procurar</span></label><div id="cad_img_preview" class="image-preview-grid"></div></div>
             <div class="form-group variant-builder"><div class="builder-heading"><label>Cores</label><span>Escolha a cor pelo nome e configure os tamanhos</span></div><div id="cad_color_rows" class="custom-color-list"></div><button type="button" class="add-inline" onclick="adicionarLinhaCor('cad_color_rows')">+ Cor</button></div>
             <button id="cad_salvar" type="button" onclick="salvarNovoProduto()" class="btn-primary product-save-button" style="width: 100%; justify-content: center; padding: 14px; font-size: 14px; margin-top: 10px;">Finalizar Cadastro</button>
         </div>
@@ -394,7 +397,8 @@
             </div>
             <div class="form-group"><label>Nome do Produto</label><input type="text" id="edit_nome" class="form-control"></div>
             <div class="form-group"><label>Substituir capa principal</label><label class="image-dropzone" for="edit_capa" data-default-text="Arraste suas imagens aqui ou clique para procurar"><input type="file" id="edit_capa" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste suas imagens aqui ou clique para procurar</span></label></div>
-            <div class="form-group"><label>Adicionar fotos (deixe em branco para manter as atuais)</label><label class="image-dropzone" for="edit_img" data-default-text="Arraste suas imagens aqui ou clique para procurar"><input type="file" id="edit_img" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" multiple class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste suas imagens aqui ou clique para procurar</span></label></div>
+            <div class="form-group"><label>Adicionar fotos (deixe em branco para manter as atuais)</label><label class="image-dropzone" for="edit_img" data-default-text="Arraste suas imagens aqui ou clique para procurar"><input type="file" id="edit_img" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" multiple class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste suas imagens aqui ou clique para procurar</span></label><div id="edit_img_preview" class="image-preview-grid"></div></div>
+            <div class="form-group"><label>Imagens cadastradas</label><div id="edit_imagens_existentes" class="image-preview-grid existing-image-grid"></div></div>
             <div class="form-group variant-builder"><div class="builder-heading"><label>Cores</label><span>Escolha a cor pelo nome e configure os tamanhos</span></div><div id="edit_color_rows" class="custom-color-list"></div><button type="button" class="add-inline" onclick="adicionarLinhaCor('edit_color_rows')">+ Cor</button></div>
             <button id="edit_salvar" type="button" onclick="salvarEdicaoProduto()" class="btn-primary product-save-button" style="width: 100%; justify-content: center; padding: 14px; font-size: 14px; margin-top: 10px;">Salvar Alterações</button>
         </div>
@@ -795,6 +799,22 @@
 
         function salvarEstoque(id) { fetch('/api/admin/produtos/atualizar', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, p: document.getElementById(`p_${id}_p`).value, m: document.getElementById(`p_${id}_m`).value, g: document.getElementById(`p_${id}_g`).value, gg: document.getElementById(`p_${id}_gg`).value}) }).then(r=>r.json()).then(d => { if(d.sucesso) { carregarPainelUnificado(); } }); }
 
+        function importarEstoqueEmLote() {
+            if (!confirm('Deseja importar o cadastro em lote com a grade de estoque atual?')) return;
+            fetch('/api/admin/importar-estoque', { method: 'POST' })
+                .then(async resposta => {
+                    const dados = await resposta.json();
+                    if (!resposta.ok || !dados.sucesso) throw new Error(dados.mensagem || 'Não foi possível importar o estoque em lote.');
+                    return dados;
+                })
+                .then(dados => {
+                    alert(dados.mensagem || 'Importação concluída.');
+                    carregarEstoque();
+                    carregarPainelUnificado();
+                })
+                .catch(erro => alert(erro.message || 'Erro ao importar o estoque.'));
+        }
+
         let variantesEditor = { cad: [], edit: [] };
         let varianteAtualEditor = null;
 
@@ -835,6 +855,53 @@
                 remover.addEventListener('click', () => removerVariante(prefixo, indice));
                 linha.append(amostra, seletor, configurar, remover);
                 container.appendChild(linha);
+            });
+        }
+
+        function atualizarPreviewUpload(inputId, containerId) {
+            const input = document.getElementById(inputId);
+            const container = document.getElementById(containerId);
+            if (!input || !container) return;
+            const arquivos = Array.from(input.files || []);
+            if (!arquivos.length) {
+                container.innerHTML = '<span class="image-empty-state">Nenhuma imagem selecionada.</span>';
+                return;
+            }
+            container.innerHTML = arquivos.map((arquivo, indice) => `
+                <div class="image-thumb">
+                    <img src="${URL.createObjectURL(arquivo)}" alt="${escaparHtml(arquivo.name)}">
+                    <span>${escaparHtml(arquivo.name)}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderizarImagensExistentes(produto) {
+            const container = document.getElementById('edit_imagens_existentes');
+            if (!container) return;
+            const imagens = Array.isArray(produto?.imagens) ? produto.imagens : [];
+            if (!imagens.length) {
+                container.innerHTML = '<span class="image-empty-state">Nenhuma imagem cadastrada.</span>';
+                return;
+            }
+            container.innerHTML = imagens.map(imagem => `
+                <div class="image-thumb">
+                    <img src="/static/${encodeURI(imagem.url || imagem.imagem_url || '')}" alt="Imagem do produto">
+                    <button type="button" data-imagem-id="${imagem.id}" data-produto-id="${produto.id}">Excluir</button>
+                </div>
+            `).join('');
+
+            container.querySelectorAll('button[data-imagem-id]').forEach(botao => {
+                botao.addEventListener('click', async () => {
+                    const resposta = await fetch(`/api/admin/produtos/${botao.dataset.produtoId}/imagens/${botao.dataset.imagemId}/excluir`, { method: 'POST' });
+                    const dados = await resposta.json();
+                    if (!dados.sucesso) {
+                        alert(dados.mensagem || 'Não foi possível excluir a imagem.');
+                        return;
+                    }
+                    await carregarEstoque();
+                    const produtoAtualizado = bancoDeProdutos[Number(botao.dataset.produtoId)];
+                    renderizarImagensExistentes(produtoAtualizado || { imagens: [] });
+                });
             });
         }
 
@@ -907,6 +974,8 @@
                 const texto = area.querySelector('.image-dropzone-copy');
                 const atualizarTexto = () => {
                     texto.textContent = input.files.length ? Array.from(input.files).map(arquivo => arquivo.name).join(', ') : area.dataset.defaultText;
+                    if (input.id === 'cad_img') atualizarPreviewUpload('cad_img', 'cad_img_preview');
+                    if (input.id === 'edit_img') atualizarPreviewUpload('edit_img', 'edit_img_preview');
                 };
                 input.addEventListener('change', atualizarTexto);
                 area.addEventListener('dragover', evento => {
@@ -923,7 +992,6 @@
                     if (!imagens.length) return;
                     const arquivos = new DataTransfer();
                     (input.multiple ? imagens : imagens.slice(0, 1)).forEach(arquivo => arquivos.items.add(arquivo));
-                    // Mantém o input nativo como fonte única para preview e envio por FormData.
                     input.files = arquivos.files;
                     input.dispatchEvent(new Event('change', { bubbles: true }));
                 });
@@ -971,6 +1039,8 @@
             document.getElementById('edit_preco').value = p.preco;
             document.getElementById('edit_capa').value = '';
             document.getElementById('edit_img').value = '';
+            document.getElementById('edit_img_preview').innerHTML = '<span class="image-empty-state">Nenhuma imagem selecionada.</span>';
+            renderizarImagensExistentes(p);
             preencherCores('edit_color_rows', p.cores, p.variantes);
             document.getElementById('modalEditarProduto').style.display = 'flex';
         }

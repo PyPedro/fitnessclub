@@ -1,5 +1,6 @@
 import json
 import sys
+from collections import OrderedDict
 from io import BytesIO
 
 import pytest
@@ -34,6 +35,30 @@ def test_inventario_soma_cores_repetidas_e_preserva_tamanho_especial():
     assert inventario['461']['estoque']['M']['Caramelo'] == 10
     assert inventario['366']['estoque']['GG2']['Branco'] == 19
     assert inventario['382']['estoque']['G']['Terracota'] == 12
+
+
+def test_ler_inventario_aceita_zerou_e_quantidade_em_linha_separada(monkeypatch, tmp_path):
+    arquivo = tmp_path / 'inventario.txt'
+    arquivo.write_text(
+        'Conj teste Ref 999\n'
+        'M\n'
+        'Zerou\n'
+        'G\n'
+        '9\n'
+        'Azul marinho\n'
+        '3\n'
+        'Preto\n',
+        encoding='utf-8',
+    )
+    monkeypatch.setattr(importar_estoque, 'INVENTORY_FILE', arquivo)
+
+    inventario = importar_estoque.ler_inventario()
+
+    assert inventario == [{
+        'nome': 'Conj teste',
+        'referencia': '999',
+        'estoque': {'M': OrderedDict(), 'G': {'Azul marinho': 9, 'Preto': 3}},
+    }]
 
 
 def test_cores_nomeadas_preservam_cor_de_pedidos_legados():
@@ -142,6 +167,23 @@ def test_apply_cria_38_produtos_e_nao_duplica_na_reexecucao(monkeypatch):
         assert Produto.query.count() == 38
 
 
+def test_api_importacao_em_lote_reutiliza_logica_de_estoque(monkeypatch):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+    monkeypatch.setattr(importar_estoque, 'create_app', lambda: app)
+
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin_logado'] = True
+        resposta = client.post('/api/admin/importar-estoque')
+
+    assert resposta.status_code in (200, 400)
+    dados = resposta.get_json()
+    assert 'sucesso' in dados
+    assert 'mensagem' in dados
+
+
 def test_api_impede_referencia_duplicada_no_cadastro_e_na_edicao(monkeypatch):
     monkeypatch.setenv('DATABASE_URL', 'sqlite://')
     app = create_app()
@@ -196,6 +238,39 @@ def test_upload_jpeg_valido_e_aceito_com_stream_rebobinado():
 
     assert validar_arquivos_imagem([upload]) == [upload]
     assert upload.stream.tell() == 0
+
+
+def test_api_exclui_imagem_ativa_e_mantem_outra_imagem(monkeypatch):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+
+    with app.app_context():
+        produto = Produto(
+            codigo='IMG-77', nome='Produto com fotos', preco=99, etiqueta='TESTE', imagem_url='uploads/primeira.jpg'
+        )
+        db.session.add(produto)
+        db.session.commit()
+        img1 = ProdutoImagem(produto=produto, imagem_url='uploads/primeira.jpg', ordem=0)
+        img2 = ProdutoImagem(produto=produto, imagem_url='uploads/segunda.jpg', ordem=1)
+        db.session.add_all([img1, img2])
+        db.session.commit()
+        produto_id = produto.id
+        imagem_id = img1.id
+
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin_logado'] = True
+        resposta = client.post(f'/api/admin/produtos/{produto_id}/imagens/{imagem_id}/excluir')
+
+    assert resposta.status_code == 200
+    resposta_json = resposta.get_json()
+    assert resposta_json['sucesso'] is True
+
+    with app.app_context():
+        produto_atualizado = Produto.query.get(produto_id)
+        assert produto_atualizado.imagem_url == 'uploads/segunda.jpg'
+        assert ProdutoImagem.query.filter_by(produto_id=produto_id).count() == 1
 
 
 def test_imagem_disponivel_detecta_assets_e_ignora_caminhos_ausentes(monkeypatch):
