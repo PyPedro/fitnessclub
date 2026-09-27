@@ -71,7 +71,7 @@
     </header>
 
     <!-- Banner Principal -->
-    <section id="inicio" class="hero-section" style="background-image: url('{{ url_for('static', filename=imagens_site.banner_hero) }}');">
+    <section id="inicio" class="hero-section"{% if imagem_disponivel(imagens_site.banner_hero) %} style="background-image: url('{{ url_for('static', filename=imagens_site.banner_hero) }}');"{% endif %}>
         <div class="hero-overlay"></div>
         <div class="hero-content">
             <h1>ABASTEÇA.<br>VENDA.<br>LUCRE.</h1>
@@ -88,24 +88,40 @@
     <main id="loja" class="container">
         <div class="products-grid">
             {% for p in produtos.items %}
+            {% set caminho_capa_galeria = imagem_variacao(p.imagem_url, 'gallery') if p.imagem_url else '' %}
+            {% set caminho_capa_thumb = imagem_variacao(p.imagem_url, 'thumb') if p.imagem_url else '' %}
+            {% set capa_disponivel = p.imagem_url and imagem_disponivel(p.imagem_url) and imagem_disponivel(caminho_capa_galeria) and imagem_disponivel(caminho_capa_thumb) %}
+            {% set imagens_produto = namespace(itens=[]) %}
+            {% for imagem in p.imagens %}
+                {% set caminho_galeria = imagem_variacao(imagem.imagem_url, 'gallery') %}
+                {% set caminho_thumb = imagem_variacao(imagem.imagem_url, 'thumb') %}
+                {% if imagem_disponivel(imagem.imagem_url) and imagem_disponivel(caminho_galeria) and imagem_disponivel(caminho_thumb) %}
+                    {% set imagens_produto.itens = imagens_produto.itens + [imagem] %}
+                {% endif %}
+            {% endfor %}
+            {% set caminho_principal = caminho_capa_galeria if capa_disponivel else (imagem_variacao(imagens_produto.itens[0].imagem_url, 'gallery') if imagens_produto.itens else '') %}
+            {% set imagem_para_carrinho = p.imagem_url if capa_disponivel else (imagens_produto.itens[0].imagem_url if imagens_produto.itens else '') %}
+            {% set total_imagens = imagens_produto.itens|length + (1 if capa_disponivel else 0) %}
             <div class="product-card">
                 <div class="product-img-wrapper product-gallery">
-                    {% if p.imagem_url %}
-                    <img class="product-main-image" src="{{ url_for('static', filename=imagem_variacao(p.imagem_url, 'gallery')) }}" alt="{{ p.nome }}" loading="lazy" decoding="async">
+                    {% if caminho_principal %}
+                    <img class="product-main-image" src="{{ url_for('static', filename=caminho_principal) }}" alt="{{ p.nome }}" loading="lazy" decoding="async">
                     {% else %}
                     <div class="product-image-placeholder" role="img" aria-label="{{ p.nome }} sem foto cadastrada"><span>Foto não cadastrada</span></div>
                     {% endif %}
-                    {% if p.imagens %}
-                    {% set total_imagens = p.imagens|length + 1 %}
+                    {% if total_imagens > 1 %}
                     <button type="button" class="gallery-arrow gallery-arrow-prev" aria-label="Imagem anterior" onpointerenter="precarregarImagemGaleria(this, -1)" onclick="navegarGaleria(this, -1)">‹</button>
                     <button type="button" class="gallery-arrow gallery-arrow-next" aria-label="Próxima imagem" onpointerenter="precarregarImagemGaleria(this, 1)" onclick="navegarGaleria(this, 1)">›</button>
                     <span class="gallery-counter" aria-live="polite">1 / {{ total_imagens }}</span>
                     <div class="product-thumbnails" role="tablist" aria-label="Fotos de {{ p.nome }}">
+                        {% if capa_disponivel %}
                         <button type="button" class="product-thumbnail active" role="tab" aria-selected="true" aria-label="Foto 1 de {{ p.nome }}" data-gallery-src="{{ url_for('static', filename=imagem_variacao(p.imagem_url, 'gallery')) }}" onpointerenter="precarregarImagemGaleria(this)" onclick="trocarImagemProduto(this, this.dataset.gallerySrc)">
                             <img src="{{ url_for('static', filename=imagem_variacao(p.imagem_url, 'thumb')) }}" alt="Capa de {{ p.nome }}" loading="lazy" decoding="async">
                         </button>
-                        {% for imagem in p.imagens %}
-                        <button type="button" class="product-thumbnail" role="tab" aria-selected="false" aria-label="Foto {{ loop.index + 1 }} de {{ p.nome }}" data-gallery-src="{{ url_for('static', filename=imagem_variacao(imagem.imagem_url, 'gallery')) }}" onpointerenter="precarregarImagemGaleria(this)" onclick="trocarImagemProduto(this, this.dataset.gallerySrc)">
+                        {% endif %}
+                        {% for imagem in imagens_produto.itens %}
+                        {% set indice_foto = loop.index + (1 if capa_disponivel else 0) %}
+                        <button type="button" class="product-thumbnail{% if not capa_disponivel and loop.first %} active{% endif %}" role="tab" aria-selected="{{ 'true' if not capa_disponivel and loop.first else 'false' }}" aria-label="Foto {{ indice_foto + 1 }} de {{ p.nome }}" data-gallery-src="{{ url_for('static', filename=imagem_variacao(imagem.imagem_url, 'gallery')) }}" onpointerenter="precarregarImagemGaleria(this)" onclick="trocarImagemProduto(this, this.dataset.gallerySrc)">
                             <img src="{{ url_for('static', filename=imagem_variacao(imagem.imagem_url, 'thumb')) }}" alt="Foto {{ loop.index }} de {{ p.nome }}" loading="lazy" decoding="async">
                         </button>
                         {% endfor %}
@@ -118,7 +134,7 @@
                     {% if p.cores_config %}{% set cores_produto = p.cores_config %}<div class="product-colors" role="img" aria-label="{{ cores_produto|length }} cores disponíveis">{% for cor in cores_produto[:5] %}<span class="product-color-swatch" title="{{ nome_cor(cor) }}" aria-hidden="true"><span class="product-color-dot" style="--swatch-color: {{ cor_hex(cor) }}"></span></span>{% endfor %}{% if cores_produto|length > 5 %}<span class="product-color-overflow" aria-hidden="true">+{{ cores_produto|length - 5 }}</span>{% endif %}</div>{% endif %}
                     <div class="product-price">A partir de R$ {{ "%.2f"|format(p.preco) | replace('.', ',') }} <span style="font-size: 10px; color: #777; font-weight: 400;">(Atacado)</span></div>
                     
-                    <button class="btn-add-minimal" onclick='abrirModalGrade({{ p.id }}, {{ p.nome|tojson }}, {{ variantes_com_cor_hex(p.variantes_config)|tojson }}, {{ (url_for("static", filename=p.imagem_url) if p.imagem_url else "")|tojson }})'>
+                    <button class="btn-add-minimal" onclick='abrirModalGrade({{ p.id }}, {{ p.nome|tojson }}, {{ variantes_com_cor_hex(p.variantes_config)|tojson }}, {{ (url_for("static", filename=imagem_para_carrinho) if imagem_para_carrinho else "")|tojson }})'>
                         Montar Grade
                     </button>
                 </div>
@@ -156,13 +172,13 @@
 
     <!-- Banners Secundários -->
     <section id="promocao" class="split-banners">
-        <div class="split-item" style="background-image: url('{{ url_for('static', filename=imagens_site.banner_macaquinho) }}');">
+        <div class="split-item"{% if imagem_disponivel(imagens_site.banner_macaquinho) %} style="background-image: url('{{ url_for('static', filename=imagens_site.banner_macaquinho) }}');"{% endif %}>
             <div class="split-content">
                 <h3>CAMPEÕES DE VENDA</h3>
                 <p>MACAQUINHOS COM ALTO GIRO E SAÍDA RÁPIDA NO SEU ESTOQUE.</p>
             </div>
         </div>
-        <div class="split-item" style="background-image: url('{{ url_for('static', filename=imagens_site.banner_lounge) }}');">
+        <div class="split-item"{% if imagem_disponivel(imagens_site.banner_lounge) %} style="background-image: url('{{ url_for('static', filename=imagens_site.banner_lounge) }}');"{% endif %}>
             <div class="split-content">
                 <h3>LINHA CASUAL PREMIUM</h3>
                 <p>DIVERSIFIQUE SUA VITRINE COM NOSSA NOVA COLEÇÃO.</p>
@@ -173,16 +189,16 @@
     <section class="category-section container">
         <h3 class="category-title">COMPRE POR CATEGORIA</h3>
         <div class="category-grid">
-            <div class="cat-item" style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_conjuntos) }}');">
+            <div class="cat-item"{% if imagem_disponivel(imagens_site.categoria_conjuntos) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_conjuntos) }}');"{% endif %}>
                 <span>CONJUNTOS</span>
             </div>
-            <div class="cat-item" style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_leggings) }}');">
+            <div class="cat-item"{% if imagem_disponivel(imagens_site.categoria_leggings) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_leggings) }}');"{% endif %}>
                 <span>LEGGINGS</span>
             </div>
-            <div class="cat-item" style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_casacos) }}');">
+            <div class="cat-item"{% if imagem_disponivel(imagens_site.categoria_casacos) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_casacos) }}');"{% endif %}>
                 <span>CASACOS</span>
             </div>
-            <div class="cat-item" style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_tops) }}');">
+            <div class="cat-item"{% if imagem_disponivel(imagens_site.categoria_tops) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_tops) }}');"{% endif %}>
                 <span>TOPS</span>
             </div>
         </div>
@@ -269,15 +285,23 @@
 
     <!-- Modal Grade de Tamanhos -->
     <div id="gradeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10005; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
-        <div style="background: #fff; padding: 25px; border-radius: 12px; max-width: 350px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;">
-            <button onclick="fecharModalGrade()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 16px; cursor: pointer;">✕</button>
-            <h3 style="font-size: 15px; font-weight: 800; color: var(--brand-purple); margin-bottom: 5px;">Escolha cor, tamanho e quantidade</h3>
-            <p id="gradeNomeProduto" style="font-size: 12px; color: #666; margin-bottom: 20px; font-weight: 600; line-height: 1.4;"></p>
-            
+        <div class="grade-modal-shell">
+            <button class="grade-modal-close" onclick="fecharModalGrade()" aria-label="Fechar modal">✕</button>
+            <div class="grade-modal-header">
+                <div>
+                    <p class="grade-modal-kicker">Montar pedido</p>
+                    <h3 id="gradeNomeProduto">Produto</h3>
+                </div>
+                <div class="grade-modal-actions">
+                    <span id="gradeResumo" class="grade-summary">0 cores · 0 peças</span>
+                    <button type="button" class="grade-link-btn">Ver estoque</button>
+                </div>
+            </div>
+
             <div id="productColorChoices" class="product-color-choices"></div>
             <div id="productGradeRows" class="size-grid"></div>
 
-            <button onclick="confirmarGrade()" style="width: 100%; padding: 12px; background: var(--brand-purple); color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;">ADICIONAR À SACOLA</button>
+            <button class="grade-modal-button" onclick="confirmarGrade()">Adicionar à sacola</button>
         </div>
     </div>
 

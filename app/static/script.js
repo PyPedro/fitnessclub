@@ -194,6 +194,12 @@ function abrirModalGrade(id, nome, variantes, imagem) {
     
     produtoTemp = { id, nome, imagem, variantes, varianteSelecionada: 0 };
     document.getElementById('gradeNomeProduto').innerText = nome;
+
+    const totalPecas = (variantes || []).reduce((total, variante) => {
+        return total + (variante.tamanhos || []).reduce((soma, tamanho) => soma + Number(tamanho.estoque || 0), 0);
+    }, 0);
+    document.getElementById('gradeResumo').textContent = `${variantes.length} cores · ${totalPecas} peças`;
+
     const opcoesDeCor = document.getElementById('productColorChoices');
     opcoesDeCor.replaceChildren();
     variantes.forEach((variante, indice) => {
@@ -204,12 +210,13 @@ function abrirModalGrade(id, nome, variantes, imagem) {
         const nomeCor = variante.cor_nome || variante.cor || 'Cor não definida';
         botao.setAttribute('aria-label', `Selecionar cor ${nomeCor}`);
         botao.title = nomeCor;
-        const amostra = document.createElement('span');
-        amostra.className = 'product-color-choice-swatch';
-        const nome = document.createElement('span');
-        nome.className = 'product-color-choice-label';
-        nome.textContent = nomeCor;
-        botao.append(amostra, nome);
+        botao.innerHTML = `
+            <span class="product-color-choice-main">
+                <span class="product-color-choice-swatch" aria-hidden="true"></span>
+                <span class="product-color-choice-label">${nomeCor}</span>
+            </span>
+            <span class="product-size-badges">${(variante.tamanhos || []).map(tamanho => `<span class="size-badge">${tamanho.nome}: ${tamanho.estoque}</span>`).join('')}</span>
+        `;
         botao.addEventListener('click', () => selecionarCorProduto(indice));
         opcoesDeCor.appendChild(botao);
     });
@@ -226,7 +233,18 @@ function selecionarCorProduto(indice) {
 
 function renderizarTamanhosProduto() {
     const variante = produtoTemp.variantes[produtoTemp.varianteSelecionada];
-    document.getElementById('productGradeRows').innerHTML = variante.tamanhos.map((tamanho, indice) => `<div class="size-row"><span class="size-label">${tamanho.nome}</span><span class="size-stock">Disp: ${tamanho.estoque} · R$ ${Number(tamanho.preco).toFixed(2).replace('.', ',')}</span><input type="number" id="inputGrade_${indice}" class="size-input" min="0" max="${tamanho.estoque}" value="0" ${tamanho.estoque === 0 ? 'disabled' : ''}></div>`).join('');
+    document.getElementById('productGradeRows').innerHTML = variante.tamanhos.map((tamanho, indice) => `
+        <div class="size-row">
+            <div class="size-row-label">
+                <span class="size-row-letter">${tamanho.nome}</span>
+                <span class="size-row-meta">R$ ${Number(tamanho.preco).toFixed(2).replace('.', ',')}</span>
+            </div>
+            <label class="size-chip">
+                <span>Qtd.</span>
+                <input type="number" id="inputGrade_${indice}" class="size-input" min="0" max="${tamanho.estoque}" value="0" ${tamanho.estoque === 0 ? 'disabled' : ''}>
+            </label>
+        </div>
+    `).join('');
 }
 
 function fecharModalGrade() {

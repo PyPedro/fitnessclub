@@ -1,5 +1,5 @@
 import os
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, UnidentifiedImageError
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session, current_app
 from app.models import Produto, ProdutoImagem, Usuario, Pedido, Admin, Visita, ImagemSite, ImportacaoEstoque
 from app import db
@@ -14,6 +14,7 @@ import re
 from datetime import datetime, timedelta
 
 main_bp = Blueprint('main', __name__)
+EXTENSOES_IMAGEM = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
 
 CORES_HEX = {
     'açaí': '#59213c', 'amarelo manteiga': '#f2df9b', 'azul': '#2456a6', 'azul bebê': '#a8d6ee',
@@ -81,6 +82,17 @@ def referencia_em_uso(codigo, ignorar_id=None):
 def variantes_com_cor_hex(variantes):
     return [{**variante, 'cor_hex': cor_para_hex(variante.get('cor')), 'cor_nome': nome_cor(variante.get('cor'))} for variante in variantes]
 
+
+def imagem_disponivel(caminho):
+    if not isinstance(caminho, str) or not caminho.strip() or os.path.isabs(caminho):
+        return False
+    raiz_estatica = os.path.abspath(current_app.static_folder)
+    caminho_arquivo = os.path.abspath(os.path.join(raiz_estatica, caminho))
+    if os.path.commonpath((raiz_estatica, caminho_arquivo)) != raiz_estatica:
+        return False
+    return os.path.isfile(caminho_arquivo)
+
+
 @main_bp.app_context_processor
 def fornecer_variantes_imagem():
     def imagem_variacao(caminho, variante):
@@ -94,6 +106,7 @@ def fornecer_variantes_imagem():
         'cor_hex': cor_para_hex,
         'nome_cor': nome_cor,
         'variantes_com_cor_hex': variantes_com_cor_hex,
+        'imagem_disponivel': imagem_disponivel,
     }
 
 # ==========================================
@@ -117,7 +130,7 @@ def limpar_carrinhos_abandonados():
         db.session.commit()
 
 def salvar_imagens_produto(produto, arquivos):
-    arquivos_validos = [arquivo for arquivo in arquivos if arquivo and arquivo.filename]
+    arquivos_validos = validar_arquivos_imagem(arquivos)
     if not arquivos_validos:
         return
 
@@ -138,15 +151,33 @@ def salvar_imagens_produto(produto, arquivos):
             ordem += 1
 
 def salvar_arquivo_imagem(arquivo):
+    validar_arquivos_imagem([arquivo])
     filename = secure_filename(arquivo.filename)
     extensao = os.path.splitext(filename)[1].lower()
-    if not filename or extensao not in {'.jpg', '.jpeg', '.png', '.webp', '.gif'}:
-        raise ValueError('Selecione uma imagem JPG, PNG, WEBP ou GIF.')
     nome_unico = f'{datetime.utcnow().strftime("%Y%m%d%H%M%S%f")}_{filename}'
     save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], nome_unico)
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     salvar_imagem_otimizada(arquivo, save_path, extensao)
     return f'uploads/{nome_unico}'
+
+
+def validar_arquivos_imagem(arquivos):
+    arquivos_validos = [arquivo for arquivo in arquivos if arquivo and arquivo.filename]
+    for arquivo in arquivos_validos:
+        filename = secure_filename(arquivo.filename)
+        extensao = os.path.splitext(filename)[1].lower()
+        if not filename or extensao not in EXTENSOES_IMAGEM:
+            raise ValueError('Envie somente imagens JPG, JPEG, PNG, WEBP ou GIF.')
+        try:
+            arquivo.stream.seek(0)
+            with Image.open(arquivo.stream) as imagem:
+                imagem.verify()
+        except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as erro:
+            raise ValueError(f'O arquivo {filename} não contém uma imagem válida.') from erro
+        finally:
+            arquivo.stream.seek(0)
+    return arquivos_validos
+
 
 def salvar_imagem_otimizada(arquivo, save_path, extensao):
     if extensao == '.gif':
@@ -471,6 +502,9 @@ def api_admin_cadastrar_produto():
         salvar_imagens_produto(novo_produto, arquivos)
         db.session.commit()
         return jsonify({"sucesso": True})
+    except ValueError as erro:
+        db.session.rollback()
+        return jsonify({"sucesso": False, "mensagem": str(erro)}), 400
     except IntegrityError:
         db.session.rollback()
         return jsonify({"sucesso": False, "mensagem": "Esta referência já foi cadastrada. Atualize a lista de estoque."}), 409
@@ -523,6 +557,9 @@ def api_admin_editar_produto(id):
 
         db.session.commit()
         return jsonify({"sucesso": True})
+    except ValueError as erro:
+        db.session.rollback()
+        return jsonify({"sucesso": False, "mensagem": str(erro)}), 400
     except IntegrityError:
         db.session.rollback()
         return jsonify({"sucesso": False, "mensagem": "Esta referência já está cadastrada em outro produto."}), 409

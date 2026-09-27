@@ -1,14 +1,17 @@
 import json
 import sys
+from io import BytesIO
 
 import pytest
+from PIL import Image
 from sqlalchemy.exc import IntegrityError
+from werkzeug.datastructures import FileStorage
 
 from app import create_app, db
-from app.models import ImportacaoEstoque, Produto
+from app.models import ImportacaoEstoque, Produto, ProdutoImagem
 from scripts import importar_estoque
 from scripts.importar_estoque import criar_produto_sem_cadastro, ler_inventario, planejar_importacao
-from app.routes import chave_cor, cor_para_hex, nome_cor, variantes_com_cor_hex
+from app.routes import chave_cor, cor_para_hex, imagem_disponivel, nome_cor, validar_arquivos_imagem, variantes_com_cor_hex
 
 
 def test_inventario_inicial_tem_referencias_unicas_e_total_esperado():
@@ -64,7 +67,7 @@ def test_catalogo_vazio_planeja_criacao_das_38_referencias():
     assert all(produto is None and metodo == 'novo produto' for _, produto, metodo in correspondencias)
 
 
-def test_vitrine_mostra_placeholder_para_produto_sem_imagem(monkeypatch):
+def test_vitrine_omite_imagens_antigas_ausentes_e_serve_banners(monkeypatch):
     monkeypatch.setenv('DATABASE_URL', 'sqlite://')
     app = create_app()
     with app.app_context():
@@ -73,17 +76,50 @@ def test_vitrine_mostra_placeholder_para_produto_sem_imagem(monkeypatch):
             nome='Conj short saia e top',
             preco=0,
             etiqueta='NOVO',
-            imagem_url='',
+            imagem_url='uploads/arquivo-que-nao-existe.pdf',
             cores=json.dumps(['Azul marinho']),
             variantes=json.dumps([{'cor': 'Azul marinho', 'tamanhos': [{'nome': 'M', 'estoque': 7, 'preco': 0}]}]),
         ))
+        produto = Produto.query.filter_by(codigo='473').one()
+        db.session.add(ProdutoImagem(produto=produto, imagem_url='uploads/arquivo-que-nao-existe.pdf', ordem=0))
         db.session.commit()
 
-    resposta = app.test_client().get('/')
+    client = app.test_client()
+    resposta = client.get('/')
     html = resposta.get_data(as_text=True)
     assert resposta.status_code == 200
     assert 'Foto não cadastrada' in html
     assert 'src="/static/"' not in html
+    assert 'arquivo-que-nao-existe.pdf' not in html
+    assets = (
+        'banner_hero1.jpeg', 'banner_macaquinho.jpeg', 'banner_lounge.jpeg',
+        'cat_conjuntos.jpeg', 'cat_leggings.jpeg', 'cat_casacos.jpeg', 'cat_tops.jpeg',
+    )
+    assert all(client.get(f'/static/img/{asset}').status_code == 200 for asset in assets)
+
+
+def test_api_cadastro_rejeita_pdf_sem_criar_produto(monkeypatch):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin_logado'] = True
+        resposta = client.post('/api/admin/produtos/cadastrar', data={
+            'codigo': 'PDF-404',
+            'nome': 'Arquivo inválido',
+            'preco': '10',
+            'grade': json.dumps([{'nome': 'M', 'estoque': 1, 'preco': 10}]),
+            'cores': json.dumps(['Preto']),
+            'variantes': json.dumps([{'cor': 'Preto', 'tamanhos': [{'nome': 'M', 'estoque': 1, 'preco': 10}]}]),
+            'imagens': (BytesIO(b'%PDF-1.7 arquivo'), 'catalogo.pdf', 'application/pdf'),
+        })
+
+    assert resposta.status_code == 400
+    assert 'somente imagens' in resposta.get_json()['mensagem']
+    with app.app_context():
+        assert Produto.query.filter_by(codigo='PDF-404').count() == 0
 
 
 def test_apply_cria_38_produtos_e_nao_duplica_na_reexecucao(monkeypatch):
@@ -140,3 +176,32 @@ def test_indice_unico_do_banco_bloqueia_referencia_com_caixa_diferente(monkeypat
             db.session.commit()
         db.session.rollback()
         assert Produto.query.count() == 1
+
+
+def test_uploads_rejeitam_pdf_e_arquivo_disfarçado_de_imagem():
+    pdf = FileStorage(stream=BytesIO(b'%PDF-1.7 arquivo'), filename='catalogo.pdf', content_type='application/pdf')
+    pdf_disfarçado = FileStorage(stream=BytesIO(b'%PDF-1.7 arquivo'), filename='catalogo.jpg', content_type='image/jpeg')
+
+    with pytest.raises(ValueError, match='somente imagens'):
+        validar_arquivos_imagem([pdf])
+    with pytest.raises(ValueError, match='imagem válida'):
+        validar_arquivos_imagem([pdf_disfarçado])
+
+
+def test_upload_jpeg_valido_e_aceito_com_stream_rebobinado():
+    conteudo = BytesIO()
+    Image.new('RGB', (1, 1), color='red').save(conteudo, format='JPEG')
+    conteudo.seek(0)
+    upload = FileStorage(stream=conteudo, filename='produto.jpg', content_type='image/jpeg')
+
+    assert validar_arquivos_imagem([upload]) == [upload]
+    assert upload.stream.tell() == 0
+
+
+def test_imagem_disponivel_detecta_assets_e_ignora_caminhos_ausentes(monkeypatch):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    with app.app_context():
+        assert imagem_disponivel('img/banner_hero1.jpeg')
+        assert not imagem_disponivel('uploads/arquivo-que-nao-existe.pdf.gallery.webp')
+        assert not imagem_disponivel('../instance/image-originals/banner_hero1.jpg')
