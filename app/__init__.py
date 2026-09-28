@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -35,8 +36,26 @@ def create_app():
     static_upload_folder = os.path.join(app.static_folder, 'uploads')
     if os.path.realpath(static_upload_folder) != os.path.realpath(app.config['UPLOAD_FOLDER']):
         if os.path.lexists(static_upload_folder):
-            if not os.path.islink(static_upload_folder) or os.path.realpath(static_upload_folder) != os.path.realpath(app.config['UPLOAD_FOLDER']):
-                raise RuntimeError(f'{static_upload_folder} precisa ser um link para UPLOAD_DIR.')
+            if os.path.islink(static_upload_folder):
+                if os.path.realpath(static_upload_folder) != os.path.realpath(app.config['UPLOAD_FOLDER']):
+                    os.unlink(static_upload_folder)
+                    os.symlink(app.config['UPLOAD_FOLDER'], static_upload_folder, target_is_directory=True)
+            else:
+                if os.path.isdir(static_upload_folder):
+                    for item in os.listdir(static_upload_folder):
+                        origem = os.path.join(static_upload_folder, item)
+                        destino = os.path.join(app.config['UPLOAD_FOLDER'], item)
+                        if os.path.exists(destino) or os.path.islink(destino):
+                            if os.path.isdir(destino) and not os.path.islink(destino):
+                                shutil.rmtree(destino)
+                            else:
+                                os.unlink(destino)
+                        shutil.move(origem, destino)
+                    os.rmdir(static_upload_folder)
+                    os.symlink(app.config['UPLOAD_FOLDER'], static_upload_folder, target_is_directory=True)
+                else:
+                    os.remove(static_upload_folder)
+                    os.symlink(app.config['UPLOAD_FOLDER'], static_upload_folder, target_is_directory=True)
         else:
             os.symlink(app.config['UPLOAD_FOLDER'], static_upload_folder, target_is_directory=True)
 
