@@ -4,6 +4,7 @@ import re
 import sys
 import unicodedata
 from collections import OrderedDict
+from datetime import datetime
 from pathlib import Path
 
 from app import create_app, db
@@ -14,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 INVENTORY_FILE = ROOT / 'data' / 'inventario-inicial.txt'
 IMPORT_KEY = 'inventario-inicial-2026-09-v2'
 SIZES = {'P', 'M', 'G', 'GG', 'GG2'}
-HEADER_PATTERN = re.compile(r'^(.+?)\s+(?:ref\s*)?(\d{3,4})$', re.IGNORECASE)
+HEADER_PATTERN = re.compile(r'^(?P<nome>.+?)\s+(?:ref\s+)*(?P<ref>\d{3,4})\s*$', re.IGNORECASE)
 STOCK_PATTERN = re.compile(r'^(\d+)\s*(.+)$')
 ZERO_PATTERN = re.compile(r'^zerou$', re.IGNORECASE)
 CORES_CANONICAS = {
@@ -50,10 +51,26 @@ def normalizar_nome_cor(value):
 
 def referencia_chave(value):
     digits = re.sub(r'\D', '', str(value or ''))
-    return digits.lstrip('0') or '0' if digits else ''
+    return digits if digits else ''
 
 
-def ler_inventario():
+def ler_inventario(arquivo=None):
+    if arquivo is None:
+        fonte = INVENTORY_FILE
+    elif hasattr(arquivo, 'read'):
+        fonte = arquivo
+    else:
+        fonte = arquivo
+
+    if hasattr(fonte, 'read'):
+        dados = fonte.read()
+        if isinstance(dados, bytes):
+            texto = dados.decode('utf-8')
+        else:
+            texto = str(dados)
+    else:
+        texto = Path(fonte).read_text(encoding='utf-8')
+
     produtos = OrderedDict()
     produto_atual = None
     tamanho_atual = None
@@ -61,10 +78,18 @@ def ler_inventario():
     ignorar_bloco = False
 
     def finalizar_produto():
-        nonlocal quantidade_pendente
+        nonlocal produto_atual, tamanho_atual, quantidade_pendente, ignorar_bloco
         if produto_atual is None:
             return
-        referencia = produto_atual['referencia']
+        referencia = referencia_chave(produto_atual.get('referencia'))
+        if not referencia:
+            produto_atual = None
+            tamanho_atual = None
+            quantidade_pendente = None
+            ignorar_bloco = False
+            return
+
+        produto_atual['referencia'] = referencia
         anterior = produtos.get(referencia)
         if anterior is None:
             produtos[referencia] = produto_atual.copy()
@@ -85,7 +110,7 @@ def ler_inventario():
             anterior['nome'] = produto_atual['nome']
         quantidade_pendente = None
 
-    for numero, linha_original in enumerate(INVENTORY_FILE.read_text(encoding='utf-8').splitlines(), start=1):
+    for numero, linha_original in enumerate(texto.splitlines(), start=1):
         linha = linha_original.strip()
         if not linha or linha.startswith('#'):
             continue
@@ -101,8 +126,8 @@ def ler_inventario():
         if cabecalho:
             finalizar_produto()
             produto_atual = {
-                'nome': cabecalho.group(1).strip(),
-                'referencia': cabecalho.group(2),
+                'nome': cabecalho.group('nome').strip(),
+                'referencia': referencia_chave(cabecalho.group('ref')),
                 'estoque': OrderedDict(),
             }
             tamanho_atual = None
@@ -111,10 +136,35 @@ def ler_inventario():
             continue
 
         if produto_atual is None:
-            if not linha.upper() in SIZES and not ZERO_PATTERN.fullmatch(linha) and not linha.isdigit() and not any(ch.isdigit() for ch in linha):
-                ignorar_bloco = True
+            if (
+                not linha.upper() in SIZES
+                and not ZERO_PATTERN.fullmatch(linha)
+                and not linha.isdigit()
+                and not STOCK_PATTERN.fullmatch(linha)
+                and not HEADER_PATTERN.fullmatch(linha)
+            ):
+                produto_atual = {
+                    'nome': linha,
+                    'referencia': '',
+                    'estoque': OrderedDict(),
+                }
+                tamanho_atual = None
+                quantidade_pendente = None
+                ignorar_bloco = False
                 continue
             raise ValueError(f'Linha {numero}: esperava nome e referencia do produto.')
+
+        if tamanho_atual is not None and quantidade_pendente is None and re.match(r'^[A-Za-zÀ-ÿ]', linha) and not linha.upper() in SIZES and not ZERO_PATTERN.fullmatch(linha) and not STOCK_PATTERN.fullmatch(linha):
+            finalizar_produto()
+            produto_atual = {
+                'nome': linha,
+                'referencia': '',
+                'estoque': OrderedDict(),
+            }
+            tamanho_atual = None
+            quantidade_pendente = None
+            ignorar_bloco = False
+            continue
 
         if linha.upper() in SIZES:
             tamanho_atual = linha.upper()
@@ -271,11 +321,11 @@ def planejar_importacao(produtos_db, inventario):
     return correspondencias, problemas
 
 
-def executar_importacao(app=None, aplicar=True):
+def executar_importacao(app=None, aplicar=True, arquivo=None):
     app = app or create_app()
     with app.app_context():
-        inventario = ler_inventario()
-        if db.session.get(ImportacaoEstoque, IMPORT_KEY):
+        inventario = ler_inventario(arquivo)
+        if arquivo is None and db.session.get(ImportacaoEstoque, IMPORT_KEY):
             return {
                 'sucesso': True,
                 'importada': False,
@@ -311,7 +361,7 @@ def executar_importacao(app=None, aplicar=True):
                 else:
                     aplicar_estoque_produto(produto, item)
 
-            db.session.add(ImportacaoEstoque(chave=IMPORT_KEY))
+            db.session.add(ImportacaoEstoque(chave=f'{IMPORT_KEY}-{datetime.utcnow().strftime("%Y%m%d%H%M%S%f")}' ))
             db.session.commit()
         except Exception:
             db.session.rollback()

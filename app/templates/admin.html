@@ -296,7 +296,10 @@
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
             <h2 style="margin: 0; font-size: 18px; font-weight: 700;">Catálogo e Grade Física</h2>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <button class="btn-primary btn-outline" onclick="importarEstoqueEmLote()">📥 Importação em lote</button>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input id="arquivo-importacao-lote" type="file" accept=".txt,.csv,text/plain" aria-label="Arquivo de inventário" style="display: none;" />
+                    <button class="btn-primary btn-outline" onclick="document.getElementById('arquivo-importacao-lote').click()">📥 Importação em lote</button>
+                </div>
                 <button class="btn-primary" onclick="document.getElementById('modalNovoProduto').style.display='flex'">+ Novo Produto</button>
             </div>
         </div>
@@ -800,8 +803,18 @@
         function salvarEstoque(id) { fetch('/api/admin/produtos/atualizar', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, p: document.getElementById(`p_${id}_p`).value, m: document.getElementById(`p_${id}_m`).value, g: document.getElementById(`p_${id}_g`).value, gg: document.getElementById(`p_${id}_gg`).value}) }).then(r=>r.json()).then(d => { if(d.sucesso) { carregarPainelUnificado(); } }); }
 
         function importarEstoqueEmLote() {
+            const inputArquivo = document.getElementById('arquivo-importacao-lote');
+            if (!inputArquivo || !inputArquivo.files || !inputArquivo.files[0]) {
+                inputArquivo?.click();
+                return;
+            }
             if (!confirm('Deseja importar o cadastro em lote com a grade de estoque atual?')) return;
-            fetch('/api/admin/importar-estoque', { method: 'POST' })
+            const formData = new FormData();
+            formData.append('arquivo', inputArquivo.files[0]);
+            fetch('/api/admin/importar-estoque', {
+                method: 'POST',
+                body: formData
+            })
                 .then(async resposta => {
                     const dados = await resposta.json();
                     if (!resposta.ok || !dados.sucesso) throw new Error(dados.mensagem || 'Não foi possível importar o estoque em lote.');
@@ -811,9 +824,21 @@
                     alert(dados.mensagem || 'Importação concluída.');
                     carregarEstoque();
                     carregarPainelUnificado();
+                    if (inputArquivo) inputArquivo.value = '';
                 })
                 .catch(erro => alert(erro.message || 'Erro ao importar o estoque.'));
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputArquivo = document.getElementById('arquivo-importacao-lote');
+            if (inputArquivo) {
+                inputArquivo.addEventListener('change', () => {
+                    if (inputArquivo.files && inputArquivo.files[0]) {
+                        importarEstoqueEmLote();
+                    }
+                });
+            }
+        });
 
         let variantesEditor = { cad: [], edit: [] };
         let varianteAtualEditor = null;

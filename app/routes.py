@@ -430,9 +430,10 @@ def api_admin_produtos():
 def api_admin_importar_estoque():
     if not session.get('admin_logado'):
         return jsonify({"sucesso": False, "mensagem": "Não autorizado."}), 401
+    arquivo = request.files.get('arquivo')
     try:
         from scripts.importar_estoque import executar_importacao
-        resultado = executar_importacao(app=current_app._get_current_object(), aplicar=True)
+        resultado = executar_importacao(app=current_app._get_current_object(), aplicar=True, arquivo=arquivo)
     except Exception as erro:
         return jsonify({"sucesso": False, "mensagem": f"Erro ao importar estoque: {erro}"}), 500
 

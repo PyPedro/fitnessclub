@@ -18,20 +18,20 @@ from app.routes import chave_cor, cor_para_hex, imagem_disponivel, nome_cor, val
 def test_inventario_inicial_tem_referencias_unicas_e_total_esperado():
     inventario = ler_inventario()
 
-    assert len(inventario) == 38
+    assert len(inventario) == 60
     assert sum(item['referencia'] == '459' for item in inventario) == 1
     assert sum(
         quantidade
         for item in inventario
         for cores in item['estoque'].values()
         for quantidade in cores.values()
-    ) == 4598
+    ) == 6704
 
 
 def test_inventario_soma_cores_repetidas_e_preserva_tamanho_especial():
     inventario = {item['referencia']: item for item in ler_inventario()}
 
-    assert inventario['523']['estoque']['M']['Açaí'] == 5
+    assert inventario['523']['estoque']['M']['Açaí'] == 8
     assert inventario['461']['estoque']['M']['Caramelo'] == 10
     assert inventario['366']['estoque']['GG2']['Branco'] == 19
     assert inventario['382']['estoque']['G']['Terracota'] == 12
@@ -61,6 +61,42 @@ def test_ler_inventario_aceita_zerou_e_quantidade_em_linha_separada(monkeypatch,
     }]
 
 
+def test_ler_inventario_aceita_cabecalhos_e_cores_no_formato_enviado_pelo_usuario(monkeypatch, tmp_path):
+    arquivo = tmp_path / 'inventario.txt'
+    arquivo.write_text(
+        'Top 2 tiras de viés\n'
+        'M\n'
+        '7 rosé\n'
+        '3Azul marinho\n'
+        'G\n'
+        'Zerou\n'
+        'Conj short e top e tiara ref 518\n'
+        'M\n'
+        '1 caramelo\n'
+        'G\n'
+        '0\n'
+        'Conj short duplo e top Ref ref 410\n'
+        'M\n'
+        '1 Pink cereja\n'
+        '11rosé\n'
+        'G\n'
+        '2 preto\n'
+        '3Azul marinho\n',
+        encoding='utf-8',
+    )
+    monkeypatch.setattr(importar_estoque, 'INVENTORY_FILE', arquivo)
+
+    inventario = importar_estoque.ler_inventario()
+    por_ref = {item['referencia']: item for item in inventario}
+
+    assert '518' in por_ref
+    assert por_ref['518']['estoque']['M']['Caramelo'] == 1
+    assert por_ref['410']['estoque']['M']['Pink cereja'] == 1
+    assert por_ref['410']['estoque']['M']['Rosé'] == 11
+    assert por_ref['410']['estoque']['G']['Azul marinho'] == 3
+    assert por_ref['410']['estoque']['G']['Preto'] == 2
+
+
 def test_cores_nomeadas_preservam_cor_de_pedidos_legados():
     assert cor_para_hex('Pink Cereja') == '#c51e62'
     assert nome_cor('#1c1c1a') == 'Preto'
@@ -84,10 +120,10 @@ def test_cria_produto_novo_com_preco_zero_sem_imagem_e_grade_completa():
     assert {'cor': 'Branco', 'tamanhos': [{'nome': 'GG2', 'estoque': 19, 'preco': 0.0}]} in json.loads(produto.variantes)
 
 
-def test_catalogo_vazio_planeja_criacao_das_38_referencias():
+def test_catalogo_vazio_planeja_criacao_das_60_referencias():
     correspondencias, problemas = planejar_importacao([], ler_inventario())
 
-    assert len(correspondencias) == 38
+    assert len(correspondencias) == 60
     assert not problemas
     assert all(produto is None and metodo == 'novo produto' for _, produto, metodo in correspondencias)
 
@@ -147,7 +183,7 @@ def test_api_cadastro_rejeita_pdf_sem_criar_produto(monkeypatch):
         assert Produto.query.filter_by(codigo='PDF-404').count() == 0
 
 
-def test_apply_cria_38_produtos_e_nao_duplica_na_reexecucao(monkeypatch):
+def test_apply_cria_60_produtos_e_nao_duplica_na_reexecucao(monkeypatch):
     monkeypatch.setenv('DATABASE_URL', 'sqlite://')
     app = create_app()
     app.config['TESTING'] = True
@@ -156,7 +192,7 @@ def test_apply_cria_38_produtos_e_nao_duplica_na_reexecucao(monkeypatch):
 
     assert importar_estoque.main() == 0
     with app.app_context():
-        assert Produto.query.count() == 38
+        assert Produto.query.count() == 60
         produto = Produto.query.filter_by(codigo='056').one()
         assert produto.preco == 0
         assert produto.imagem_url == ''
@@ -164,7 +200,85 @@ def test_apply_cria_38_produtos_e_nao_duplica_na_reexecucao(monkeypatch):
 
     assert importar_estoque.main() == 0
     with app.app_context():
-        assert Produto.query.count() == 38
+        assert Produto.query.count() == 60
+
+
+def test_importacao_por_arquivo_texto_adiciona_itens_novos(monkeypatch, tmp_path):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+    monkeypatch.setattr(importar_estoque, 'create_app', lambda: app)
+
+    arquivo = tmp_path / 'lote-novo.txt'
+    arquivo.write_text(
+        'Conj teste lote novo Ref 999\n'
+        'M\n'
+        '2 Azul marinho\n'
+        '1 Preto\n'
+        'G\n'
+        '3 Verde militar\n'
+        '1 Rosé\n',
+        encoding='utf-8',
+    )
+
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin_logado'] = True
+        resposta = client.post('/api/admin/importar-estoque', data={
+            'arquivo': (arquivo.open('rb'), 'lote-novo.txt'),
+        })
+
+    assert resposta.status_code == 200
+    dados = resposta.get_json()
+    assert dados['sucesso'] is True
+    assert dados['importada'] is True
+    with app.app_context():
+        produto = Produto.query.filter_by(codigo='999').first()
+        assert produto is not None
+        assert produto.estoque_m == 3
+        assert produto.estoque_g == 4
+
+
+def test_importacao_por_arquivo_texto_pode_adicionar_referencia_nova_apos_importacao_inicial(monkeypatch, tmp_path):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+    monkeypatch.setattr(importar_estoque, 'create_app', lambda: app)
+
+    with app.app_context():
+        db.session.add(ImportacaoEstoque(chave=importar_estoque.IMPORT_KEY))
+        db.session.commit()
+
+    arquivo = tmp_path / 'lote-novo-ref-456.txt'
+    arquivo.write_text(
+        'Conj short saia e top e tiara ref 456\n'
+        'M\n'
+        '7 rosé\n'
+        '3 Azul neblina\n'
+        '1 verde militar\n'
+        '2 grafite\n'
+        'G\n'
+        '9 Azul marinho\n',
+        encoding='utf-8',
+    )
+
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin_logado'] = True
+        resposta = client.post('/api/admin/importar-estoque', data={
+            'arquivo': (arquivo.open('rb'), 'lote-novo-ref-456.txt'),
+        })
+
+    assert resposta.status_code == 200
+    dados = resposta.get_json()
+    assert dados['sucesso'] is True
+    assert dados['importada'] is True
+    with app.app_context():
+        produto = Produto.query.filter_by(codigo='456').first()
+        assert produto is not None
+        assert produto.nome == 'Conj short saia e top e tiara'
+        assert produto.estoque_m == 13
+        assert produto.estoque_g == 9
 
 
 def test_api_importacao_em_lote_reutiliza_logica_de_estoque(monkeypatch):
