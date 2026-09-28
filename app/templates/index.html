@@ -3,31 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leyly Moda Fitness | Atacado Direto de Fábrica</title>
+    <title>Fitness Club | Atacado Direto de Fábrica</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=22">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=21">
 </head>
 <body>
-
-    <div class="announcement-bar">
-        COMPRE DIRETO DE FÁBRICA <span>|</span> PEDIDO MÍNIMO DE ATACADO: R$ 330,00 <span>|</span> ENVIAMOS PARA TODO O BRASIL
-    </div>
 
     <!-- Cabeçalho Principal -->
     <header class="main-header">
         <nav class="nav-left">
-            <a href="#lancamentos">Lançamentos</a>
-            <a href="#loja">Catálogo</a>
-            <a href="#promocao">Oportunidades</a>
-            <a href="#sobre">Fábrica</a>
+            <a href="#lancamentos">Novidades</a>
+            <a href="#loja">Comprar</a>
+            <a href="#promocao">Destaques</a>
+            <a href="#sobre">A Fitness Club</a>
         </nav>
-
-        <a class="logo-container" href="#inicio" aria-label="Leyly Moda Fitness - início">
-            <img class="logo" src="{{ url_for('static', filename='img/logo.png') }}" alt="Leyly Moda Fitness" loading="eager">
-        </a>
         
         <div class="nav-right">
             <!-- Botão Busca -->
@@ -36,7 +28,7 @@
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
-                    <span>BUSCA</span>
+                    <span>Buscar</span>
             </a>
 
             <!-- Menu de Usuário -->
@@ -65,63 +57,60 @@
                     <line x1="3" y1="6" x2="21" y2="6"></line>
                     <path d="M16 10a4 4 0 0 1-8 0"></path>
                 </svg>
-                    <span>PEDIDO (<span id="cartCount">0</span>)</span>
+                    <span>Pedido (<span id="cartCount">0</span>)</span>
             </a>
         </div>
     </header>
 
     <!-- Banner Principal -->
-    <section id="inicio" class="hero-section"{% if imagem_disponivel(imagens_site.banner_hero) %} style="background-image: url('{{ url_for('static', filename=imagens_site.banner_hero) }}');"{% endif %}>
+    <section id="inicio" class="hero-section" style="background-image: url('{{ url_for('static', filename=imagens_site.banner_hero) }}');">
         <div class="hero-overlay"></div>
         <div class="hero-content">
-            <h1>ABASTEÇA.<br>VENDA.<br>LUCRE.</h1>
-            <a href="#loja" class="btn-primary">VER CATÁLOGO DE ATACADO</a>
+            <p class="hero-kicker">FITNESS CLUB</p>
+            <h1>Vista sua<br>melhor versão.</h1>
+            <p class="hero-copy">Peças que acompanham o seu ritmo, com qualidade e preço direto da fábrica.</p>
+            <a href="#loja" class="btn-primary">Descobrir coleção <span>→</span></a>
         </div>
     </section>
 
+    <section class="quick-categories" aria-label="Categorias">
+        <a href="#loja">Conjuntos <span>↗</span></a>
+        <a href="#loja">Leggings <span>↗</span></a>
+        <a href="#loja">Tops <span>↗</span></a>
+        <a href="#loja">Casacos <span>↗</span></a>
+        <a href="#loja">Lançamentos <span>↗</span></a>
+    </section>
+
     <section id="lancamentos" class="section-heading">
-        <h2>ALTA RENTABILIDADE PARA SEU NEGÓCIO</h2>
-        <p>MODELAGEM EXCLUSIVA, QUALIDADE PREMIUM E PREÇO DE FÁBRICA.<br> COMPRA MÍNIMA DE R$ 330,00 EM PRODUTOS PARA ATACADO.</p>
+        <div>
+            <p class="eyebrow">A coleção essencial</p>
+            <h2>Feita para acompanhar<br>todos os seus movimentos.</h2>
+        </div>
+        <p>Modelagens confortáveis, acabamento premium e peças versáteis para treinar, viver e vender.</p>
     </section>
 
     <!-- Vitrine de Produtos (Paginada) -->
     <main id="loja" class="container">
+        <div class="catalog-heading">
+            <h3>Os essenciais</h3>
+            <a href="#loja">Ver todos <span>→</span></a>
+        </div>
         <div class="products-grid">
             {% for p in produtos.items %}
-            {% set caminho_capa_galeria = imagem_variacao(p.imagem_url, 'gallery') if p.imagem_url else '' %}
-            {% set caminho_capa_thumb = imagem_variacao(p.imagem_url, 'thumb') if p.imagem_url else '' %}
-            {% set capa_disponivel = p.imagem_url and imagem_disponivel(p.imagem_url) and imagem_disponivel(caminho_capa_galeria) and imagem_disponivel(caminho_capa_thumb) %}
-            {% set imagens_produto = namespace(itens=[]) %}
-            {% for imagem in p.imagens %}
-                {% set caminho_galeria = imagem_variacao(imagem.imagem_url, 'gallery') %}
-                {% set caminho_thumb = imagem_variacao(imagem.imagem_url, 'thumb') %}
-                {% if imagem_disponivel(imagem.imagem_url) and imagem_disponivel(caminho_galeria) and imagem_disponivel(caminho_thumb) %}
-                    {% set imagens_produto.itens = imagens_produto.itens + [imagem] %}
-                {% endif %}
-            {% endfor %}
-            {% set caminho_principal = caminho_capa_galeria if capa_disponivel else (imagem_variacao(imagens_produto.itens[0].imagem_url, 'gallery') if imagens_produto.itens else '') %}
-            {% set imagem_para_carrinho = p.imagem_url if capa_disponivel else (imagens_produto.itens[0].imagem_url if imagens_produto.itens else '') %}
-            {% set total_imagens = imagens_produto.itens|length + (1 if capa_disponivel else 0) %}
             <div class="product-card">
                 <div class="product-img-wrapper product-gallery">
-                    {% if caminho_principal %}
-                    <img class="product-main-image" src="{{ url_for('static', filename=caminho_principal) }}" alt="{{ p.nome }}" loading="lazy" decoding="async">
-                    {% else %}
-                    <div class="product-image-placeholder" role="img" aria-label="{{ p.nome }} sem foto cadastrada"><span>Foto não cadastrada</span></div>
-                    {% endif %}
-                    {% if total_imagens > 1 %}
+                    <img class="product-main-image" src="{{ url_for('static', filename=imagem_variacao(p.imagem_url, 'gallery')) }}" alt="{{ p.nome }}" loading="lazy" decoding="async">
+                    {% if p.imagens %}
+                    {% set total_imagens = p.imagens|length + 1 %}
                     <button type="button" class="gallery-arrow gallery-arrow-prev" aria-label="Imagem anterior" onpointerenter="precarregarImagemGaleria(this, -1)" onclick="navegarGaleria(this, -1)">‹</button>
                     <button type="button" class="gallery-arrow gallery-arrow-next" aria-label="Próxima imagem" onpointerenter="precarregarImagemGaleria(this, 1)" onclick="navegarGaleria(this, 1)">›</button>
                     <span class="gallery-counter" aria-live="polite">1 / {{ total_imagens }}</span>
                     <div class="product-thumbnails" role="tablist" aria-label="Fotos de {{ p.nome }}">
-                        {% if capa_disponivel %}
                         <button type="button" class="product-thumbnail active" role="tab" aria-selected="true" aria-label="Foto 1 de {{ p.nome }}" data-gallery-src="{{ url_for('static', filename=imagem_variacao(p.imagem_url, 'gallery')) }}" onpointerenter="precarregarImagemGaleria(this)" onclick="trocarImagemProduto(this, this.dataset.gallerySrc)">
                             <img src="{{ url_for('static', filename=imagem_variacao(p.imagem_url, 'thumb')) }}" alt="Capa de {{ p.nome }}" loading="lazy" decoding="async">
                         </button>
-                        {% endif %}
-                        {% for imagem in imagens_produto.itens %}
-                        {% set indice_foto = loop.index + (1 if capa_disponivel else 0) %}
-                        <button type="button" class="product-thumbnail{% if not capa_disponivel and loop.first %} active{% endif %}" role="tab" aria-selected="{{ 'true' if not capa_disponivel and loop.first else 'false' }}" aria-label="Foto {{ indice_foto + 1 }} de {{ p.nome }}" data-gallery-src="{{ url_for('static', filename=imagem_variacao(imagem.imagem_url, 'gallery')) }}" onpointerenter="precarregarImagemGaleria(this)" onclick="trocarImagemProduto(this, this.dataset.gallerySrc)">
+                        {% for imagem in p.imagens %}
+                        <button type="button" class="product-thumbnail" role="tab" aria-selected="false" aria-label="Foto {{ loop.index + 1 }} de {{ p.nome }}" data-gallery-src="{{ url_for('static', filename=imagem_variacao(imagem.imagem_url, 'gallery')) }}" onpointerenter="precarregarImagemGaleria(this)" onclick="trocarImagemProduto(this, this.dataset.gallerySrc)">
                             <img src="{{ url_for('static', filename=imagem_variacao(imagem.imagem_url, 'thumb')) }}" alt="Foto {{ loop.index }} de {{ p.nome }}" loading="lazy" decoding="async">
                         </button>
                         {% endfor %}
@@ -129,12 +118,12 @@
                     {% endif %}
                 </div>
                 <div class="product-info">
-                    <div class="product-brand">LEYLY FITNESS</div>
-                    <h3 class="product-name">{{ p.nome }} <span style="font-size: 11px; color: #666; font-weight: 700; letter-spacing: 0.06em;">REF {{ p.codigo or '—' }}</span></h3>
-                    {% if p.cores_config %}{% set cores_produto = p.cores_config %}<div class="product-colors" role="img" aria-label="{{ cores_produto|length }} cores disponíveis">{% for cor in cores_produto[:5] %}<span class="product-color-swatch" title="{{ nome_cor(cor) }}" aria-hidden="true"><span class="product-color-dot" style="--swatch-color: {{ cor_hex(cor) }}"></span></span>{% endfor %}{% if cores_produto|length > 5 %}<span class="product-color-overflow" aria-hidden="true">+{{ cores_produto|length - 5 }}</span>{% endif %}</div>{% endif %}
+                    <div class="product-brand">FITNESS CLUB</div>
+                    <h3 class="product-name">{{ p.nome }}</h3>
+                    {% if p.cores_config %}<div class="product-colors" aria-label="Cores disponíveis">{% for cor in p.cores_config %}<span class="product-color-swatch" style="--swatch-color: {{ cor }}" title="Cor disponível"></span>{% endfor %}</div>{% endif %}
                     <div class="product-price">A partir de R$ {{ "%.2f"|format(p.preco) | replace('.', ',') }} <span style="font-size: 10px; color: #777; font-weight: 400;">(Atacado)</span></div>
                     
-                    <button class="btn-add-minimal" onclick='abrirModalGrade({{ p.id }}, {{ p.nome|tojson }}, {{ variantes_com_cor_hex(p.variantes_config)|tojson }}, {{ (url_for("static", filename=imagem_para_carrinho) if imagem_para_carrinho else "")|tojson }})'>
+                    <button class="btn-add-minimal" onclick='abrirModalGrade({{ p.id }}, {{ p.nome|tojson }}, {{ p.variantes_config|tojson }}, {{ url_for("static", filename=p.imagem_url)|tojson }})'>
                         Montar Grade
                     </button>
                 </div>
@@ -170,15 +159,25 @@
         </div>
     </main>
 
+    <section class="brand-promise">
+        <div class="promise-image" style="background-image: url('{{ url_for('static', filename=imagens_site.banner_promise) }}');"></div>
+        <div class="promise-copy">
+            <p class="eyebrow">Por trás da peça</p>
+            <h2>Conforto que se sente.<br>Qualidade que permanece.</h2>
+            <p>Produzimos moda fitness para quem se movimenta todos os dias. Escolha seus favoritos e monte seu pedido de atacado.</p>
+            <a class="text-link" href="#loja">Conheça a coleção <span>→</span></a>
+        </div>
+    </section>
+
     <!-- Banners Secundários -->
     <section id="promocao" class="split-banners">
-        <div class="split-item"{% if imagem_disponivel(imagens_site.banner_macaquinho) %} style="background-image: url('{{ url_for('static', filename=imagens_site.banner_macaquinho) }}');"{% endif %}>
+        <div class="split-item" style="background-image: url('{{ url_for('static', filename=imagens_site.banner_macaquinho) }}');">
             <div class="split-content">
                 <h3>CAMPEÕES DE VENDA</h3>
                 <p>MACAQUINHOS COM ALTO GIRO E SAÍDA RÁPIDA NO SEU ESTOQUE.</p>
             </div>
         </div>
-        <div class="split-item"{% if imagem_disponivel(imagens_site.banner_lounge) %} style="background-image: url('{{ url_for('static', filename=imagens_site.banner_lounge) }}');"{% endif %}>
+        <div class="split-item" style="background-image: url('{{ url_for('static', filename=imagens_site.banner_lounge) }}');">
             <div class="split-content">
                 <h3>LINHA CASUAL PREMIUM</h3>
                 <p>DIVERSIFIQUE SUA VITRINE COM NOSSA NOVA COLEÇÃO.</p>
@@ -189,29 +188,26 @@
     <section class="category-section container">
         <h3 class="category-title">COMPRE POR CATEGORIA</h3>
         <div class="category-grid">
-            <a href="{{ url_for('main.index', categoria='conjuntos') }}#loja" class="cat-item"{% if imagem_disponivel(imagens_site.categoria_conjuntos) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_conjuntos) }}');"{% endif %}>
+            <div class="cat-item" style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_conjuntos) }}');">
                 <span>CONJUNTOS</span>
-            </a>
-            <a href="{{ url_for('main.index', categoria='leggings') }}#loja" class="cat-item"{% if imagem_disponivel(imagens_site.categoria_leggings) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_leggings) }}');"{% endif %}>
+            </div>
+            <div class="cat-item" style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_leggings) }}');">
                 <span>LEGGINGS</span>
-            </a>
-            <a href="{{ url_for('main.index', categoria='casacos') }}#loja" class="cat-item"{% if imagem_disponivel(imagens_site.categoria_casacos) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_casacos) }}');"{% endif %}>
+            </div>
+            <div class="cat-item" style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_casacos) }}');">
                 <span>CASACOS</span>
-            </a>
-            <a href="{{ url_for('main.index', categoria='tops') }}#loja" class="cat-item"{% if imagem_disponivel(imagens_site.categoria_tops) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_tops) }}');"{% endif %}>
+            </div>
+            <div class="cat-item" style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_tops) }}');">
                 <span>TOPS</span>
-            </a>
+            </div>
         </div>
     </section>
 
     <!-- Rodapé -->
     <footer id="sobre" style="text-align: center; padding: 60px 20px; background: #ffffff; margin-top: 40px; border-top: 1px solid var(--border-color);">
-        <h3 style="color: var(--brand-purple); font-weight: 800; letter-spacing: 2px; margin-bottom: 10px;">LEYLY MODA FITNESS</h3>
-        <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 1px;">FABRICAÇÃO PRÓPRIA | PERNAMBUCO | VENDAS APENAS EM ATACADO (MÍNIMO R$ 330,00)</p>
-        <p style="font-size: 10px; color: #888; margin-top: 30px;">© 2026 Leyly Moda Fitness. Todos os direitos reservados.</p>
-        <p style="font-size: 10px; color: #888; margin-top: 10px; letter-spacing: .3px;">
-            Desenvolvido por <strong style="color: var(--brand-purple);">Pedro Marinho</strong>. Um produto <strong style="color: var(--brand-purple);">Optmiza</strong>.
-        </p>
+        <h3 style="color: var(--brand-purple); font-weight: 800; letter-spacing: 2px; margin-bottom: 10px;">FITNESS CLUB</h3>
+        <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 1px;">FABRICAÇÃO PRÓPRIA | PERNAMBUCO | VENDAS APENAS EM ATACADO</p>
+        <p style="font-size: 10px; color: #888; margin-top: 30px;">© 2026 Fitness Club. Todos os direitos reservados.</p>
     </footer>
 
     <!-- Gaveta do Carrinho -->
@@ -230,7 +226,6 @@
             <div id="freteResultado" class="frete-resultado"></div>
             
             <div class="total-row"><strong>Subtotal de Produtos:</strong> <span id="cartSubtotal">R$ 0,00</span></div>
-            <div class="wholesale-minimum">Mínimo de atacado: R$ 330,00</div>
             
             <div class="total-row" id="rowFrete" style="display: none;"><strong>Frete:</strong> <span id="cartFreteValue">R$ 0,00</span></div>
             <div class="total-row total-final"><strong>Valor Total:</strong> <span id="cartDrawerTotal">R$ 0,00</span></div>
@@ -288,29 +283,21 @@
 
     <!-- Modal Grade de Tamanhos -->
     <div id="gradeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10005; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
-        <div class="grade-modal-shell">
-            <button class="grade-modal-close" onclick="fecharModalGrade()" aria-label="Fechar modal">✕</button>
-            <div class="grade-modal-header">
-                <div>
-                    <p class="grade-modal-kicker">Montar pedido</p>
-                    <h3 id="gradeNomeProduto">Produto</h3>
-                </div>
-                <div class="grade-modal-actions">
-                    <span id="gradeResumo" class="grade-summary">0 cores · 0 peças</span>
-                    <button type="button" class="grade-link-btn">Ver estoque</button>
-                </div>
-            </div>
-
+        <div style="background: #fff; padding: 25px; border-radius: 12px; max-width: 350px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;">
+            <button onclick="fecharModalGrade()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 16px; cursor: pointer;">✕</button>
+            <h3 style="font-size: 15px; font-weight: 800; color: var(--brand-purple); margin-bottom: 5px;">Escolha cor, tamanho e quantidade</h3>
+            <p id="gradeNomeProduto" style="font-size: 12px; color: #666; margin-bottom: 20px; font-weight: 600; line-height: 1.4;"></p>
+            
             <div id="productColorChoices" class="product-color-choices"></div>
             <div id="productGradeRows" class="size-grid"></div>
 
-            <button class="grade-modal-button" onclick="confirmarGrade()">Adicionar à sacola</button>
+            <button onclick="confirmarGrade()" style="width: 100%; padding: 12px; background: var(--brand-purple); color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;">ADICIONAR À SACOLA</button>
         </div>
     </div>
 
     <script>
         const usuarioLogado = {{ 'true' if usuario_logado else 'false' }};
     </script>
-    <script src="{{ url_for('static', filename='script.js') }}?v=15"></script>
+    <script src="{{ url_for('static', filename='script.js') }}?v=14"></script>
 </body>
 </html>
