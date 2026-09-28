@@ -57,6 +57,29 @@ def nome_cor(cor):
     return cor
 
 
+def chave_nome_produto(nome):
+    if not isinstance(nome, str):
+        return ''
+    nome = nome.strip()
+    nome = re.sub(r'\s+', ' ', nome)
+    return nome.casefold().replace('  ', ' ')
+
+
+def categoria_por_nome(nome):
+    texto = chave_nome_produto(nome)
+    if not texto:
+        return None
+    if any(token in texto for token in ('conj', 'conjunto', 'short', 'saia', 'vest', 'set', 'colete')):
+        return 'conjuntos'
+    if any(token in texto for token in ('legging', 'leggings', 'calça', 'calca')):
+        return 'leggings'
+    if any(token in texto for token in ('casaco', 'jaqueta', 'moletom', 'corta vento')):
+        return 'casacos'
+    if any(token in texto for token in ('top', 'crop', 'crops', 'biquini', 'sutiã', 'sutia', 'blusa')):
+        return 'tops'
+    return None
+
+
 def chave_cor(cor):
     nome = nome_cor(cor)
     if nome.startswith('Personalizada ('):
@@ -293,14 +316,46 @@ def index():
     garantir_imagens_site()
     imagens_site = {imagem.chave: imagem.imagem_url for imagem in ImagemSite.query.all()}
 
+    categoria = request.args.get('categoria', '').strip().casefold()
+    produtos = Produto.query.order_by(Produto.nome.asc()).all()
+    if categoria:
+        produtos = [produto for produto in produtos if categoria_por_nome(produto.nome) == categoria]
+
+    agrupados = {}
+    for produto in produtos:
+        chave = chave_nome_produto(produto.nome)
+        if not chave:
+            agrupados.setdefault(f'__sem_nome_{len(agrupados)}', produto)
+            continue
+        agrupados.setdefault(chave, produto)
+
+    produtos_ordenados = list(agrupados.values())
+
     page = request.args.get('page', 1, type=int)
-    produtos_paginados = Produto.query.paginate(page=page, per_page=16, error_out=False)
+    per_page = 16
+    total_paginas = max(1, (len(produtos_ordenados) + per_page - 1) // per_page)
+    if page < 1:
+        page = 1
+    if page > total_paginas:
+        page = total_paginas
+    inicio = (page - 1) * per_page
+    fim = inicio + per_page
+    produtos_paginados = produtos_ordenados[inicio:fim]
 
     return render_template('index.html', 
-                           produtos=produtos_paginados, 
+                           produtos=type('PaginaProdutos', (), {
+                               'items': produtos_paginados,
+                               'page': page,
+                               'has_prev': page > 1,
+                               'has_next': page < total_paginas,
+                               'prev_num': page - 1,
+                               'next_num': page + 1,
+                               'iter_pages': lambda *args, **kwargs: range(1, total_paginas + 1),
+                           })(),
                            imagens_site=imagens_site,
-                           usuario_logado=current_user.is_authenticated, 
-                           nome_usuario=current_user.nome if current_user.is_authenticated else "")
+                           usuario_logado=current_user.is_authenticated,
+                           nome_usuario=current_user.nome if current_user.is_authenticated else '',
+                           categoria_atual=categoria)
 
 @main_bp.route('/api/cadastro', methods=['POST'])
 def api_cadastro():

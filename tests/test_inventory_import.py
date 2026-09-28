@@ -181,6 +181,29 @@ def test_vitrine_omite_imagens_antigas_ausentes_e_serve_banners(monkeypatch):
     assert all(client.get(f'/static/img/{asset}').status_code == 200 for asset in assets)
 
 
+def test_vitrine_filtra_por_categoria_e_agrupa_por_nome(monkeypatch):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+
+    with app.app_context():
+        db.session.add_all([
+            Produto(codigo='001', nome='Conj short e top', preco=99.9, etiqueta='NOVO', imagem_url=''),
+            Produto(codigo='002', nome='Conj short e top', preco=109.9, etiqueta='NOVO', imagem_url=''),
+            Produto(codigo='003', nome='Top 2 tiras de viés', preco=69.9, etiqueta='NOVO', imagem_url=''),
+            Produto(codigo='004', nome='Legging com bolso', preco=89.9, etiqueta='NOVO', imagem_url=''),
+        ])
+        db.session.commit()
+
+    with app.test_client() as client:
+        resposta = client.get('/?categoria=conjuntos')
+        assert resposta.status_code == 200
+        html = resposta.get_data(as_text=True)
+        assert 'Conj short e top' in html
+        assert 'Top 2 tiras de viés' not in html
+        assert 'Legging com bolso' not in html
+        assert html.count('class="product-card"') == 1
+
+
 def test_api_cadastro_rejeita_pdf_sem_criar_produto(monkeypatch):
     monkeypatch.setenv('DATABASE_URL', 'sqlite://')
     app = create_app()

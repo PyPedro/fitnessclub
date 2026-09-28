@@ -73,11 +73,12 @@ body {
 }
 
 .logo {
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: 4px;
+    display: block;
+    height: 34px;
+    width: auto;
+    object-fit: contain;
     cursor: pointer;
-    color: #fff;
+    filter: brightness(0) invert(1);
 }
 
 .nav-right {
@@ -1033,7 +1034,7 @@ body { background: var(--bg-main); font-family: 'Inter', sans-serif; }
 .main-header .nav-icon-link[style] { color: #fff !important; }
 .nav-right { gap: clamp(10px, 2vw, 24px); }
 .logo-container { position: absolute; left: 50%; transform: translateX(-50%); color: #fff; text-decoration: none; }
-.logo { font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 5px; line-height: 1; }
+.logo { height: 38px; width: auto; object-fit: contain; filter: brightness(0) invert(1); }
 .logo small { display: block; font-size: 6px; letter-spacing: 2.5px; margin-top: 5px; font-weight: 600; }
 .hero-section { height: min(650px, 76vw); min-height: 490px; background-position: center 32%; }
 .hero-overlay { background: linear-gradient(90deg, rgba(20,8,26,.68), rgba(20,8,26,.08) 70%), linear-gradient(0deg, rgba(20,8,26,.25), transparent 50%); }

@@ -26,7 +26,7 @@
         </nav>
 
         <a class="logo-container" href="#inicio" aria-label="Leyly Moda Fitness - início">
-            <span class="logo">LEYLY</span>
+            <img class="logo" src="{{ url_for('static', filename='img/logo.png') }}" alt="Leyly Moda Fitness" loading="eager">
         </a>
         
         <div class="nav-right">
@@ -189,18 +189,18 @@
     <section class="category-section container">
         <h3 class="category-title">COMPRE POR CATEGORIA</h3>
         <div class="category-grid">
-            <div class="cat-item"{% if imagem_disponivel(imagens_site.categoria_conjuntos) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_conjuntos) }}');"{% endif %}>
+            <a href="{{ url_for('main.index', categoria='conjuntos') }}#loja" class="cat-item"{% if imagem_disponivel(imagens_site.categoria_conjuntos) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_conjuntos) }}');"{% endif %}>
                 <span>CONJUNTOS</span>
-            </div>
-            <div class="cat-item"{% if imagem_disponivel(imagens_site.categoria_leggings) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_leggings) }}');"{% endif %}>
+            </a>
+            <a href="{{ url_for('main.index', categoria='leggings') }}#loja" class="cat-item"{% if imagem_disponivel(imagens_site.categoria_leggings) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_leggings) }}');"{% endif %}>
                 <span>LEGGINGS</span>
-            </div>
-            <div class="cat-item"{% if imagem_disponivel(imagens_site.categoria_casacos) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_casacos) }}');"{% endif %}>
+            </a>
+            <a href="{{ url_for('main.index', categoria='casacos') }}#loja" class="cat-item"{% if imagem_disponivel(imagens_site.categoria_casacos) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_casacos) }}');"{% endif %}>
                 <span>CASACOS</span>
-            </div>
-            <div class="cat-item"{% if imagem_disponivel(imagens_site.categoria_tops) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_tops) }}');"{% endif %}>
+            </a>
+            <a href="{{ url_for('main.index', categoria='tops') }}#loja" class="cat-item"{% if imagem_disponivel(imagens_site.categoria_tops) %} style="background-image: url('{{ url_for('static', filename=imagens_site.categoria_tops) }}');"{% endif %}>
                 <span>TOPS</span>
-            </div>
+            </a>
         </div>
     </section>
 
@@ -209,6 +209,9 @@
         <h3 style="color: var(--brand-purple); font-weight: 800; letter-spacing: 2px; margin-bottom: 10px;">LEYLY MODA FITNESS</h3>
         <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 1px;">FABRICAÇÃO PRÓPRIA | PERNAMBUCO | VENDAS APENAS EM ATACADO (MÍNIMO R$ 330,00)</p>
         <p style="font-size: 10px; color: #888; margin-top: 30px;">© 2026 Leyly Moda Fitness. Todos os direitos reservados.</p>
+        <p style="font-size: 10px; color: #888; margin-top: 10px; letter-spacing: .3px;">
+            Desenvolvido por <strong style="color: var(--brand-purple);">Pedro Marinho</strong>. Um produto <strong style="color: var(--brand-purple);">Optmiza</strong>.
+        </p>
     </footer>
 
     <!-- Gaveta do Carrinho -->
