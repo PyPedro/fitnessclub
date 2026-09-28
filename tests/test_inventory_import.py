@@ -97,6 +97,28 @@ def test_ler_inventario_aceita_cabecalhos_e_cores_no_formato_enviado_pelo_usuari
     assert por_ref['410']['estoque']['G']['Preto'] == 2
 
 
+def test_ler_inventario_cria_referencia_sintetica_para_itens_sem_referencia(monkeypatch, tmp_path):
+    arquivo = tmp_path / 'inventario.txt'
+    arquivo.write_text(
+        'Top 2 tiras de viés\n'
+        'M\n'
+        '7 rosé\n'
+        'G\n'
+        '3 Azul marinho\n'
+        'Conj short e top e tiara ref 518\n'
+        'M\n'
+        '1 caramelo\n',
+        encoding='utf-8',
+    )
+    monkeypatch.setattr(importar_estoque, 'INVENTORY_FILE', arquivo)
+
+    inventario = importar_estoque.ler_inventario(gerar_referencia_ausente=True)
+    assert {item['referencia'] for item in inventario} == {'0', '518'}
+    assert inventario[0]['nome'] == 'Top 2 tiras de viés'
+    assert inventario[0]['estoque']['M']['Rosé'] == 7
+    assert inventario[0]['estoque']['G']['Azul marinho'] == 3
+
+
 def test_cores_nomeadas_preservam_cor_de_pedidos_legados():
     assert cor_para_hex('Pink Cereja') == '#c51e62'
     assert nome_cor('#1c1c1a') == 'Preto'

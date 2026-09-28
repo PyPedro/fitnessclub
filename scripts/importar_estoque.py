@@ -54,7 +54,7 @@ def referencia_chave(value):
     return digits if digits else ''
 
 
-def ler_inventario(arquivo=None):
+def ler_inventario(arquivo=None, gerar_referencia_ausente=False):
     if arquivo is None:
         fonte = INVENTORY_FILE
     elif hasattr(arquivo, 'read'):
@@ -76,6 +76,17 @@ def ler_inventario(arquivo=None):
     tamanho_atual = None
     quantidade_pendente = None
     ignorar_bloco = False
+    referencias_sinteticas = set()
+    indice_referencia_sintetica = 0
+
+    def gerar_referencia_sintetica():
+        nonlocal indice_referencia_sintetica
+        while True:
+            indice_referencia_sintetica += 1
+            referencia = '0' * indice_referencia_sintetica
+            if referencia not in referencias_sinteticas and referencia not in produtos:
+                referencias_sinteticas.add(referencia)
+                return referencia
 
     def finalizar_produto():
         nonlocal produto_atual, tamanho_atual, quantidade_pendente, ignorar_bloco
@@ -83,11 +94,14 @@ def ler_inventario(arquivo=None):
             return
         referencia = referencia_chave(produto_atual.get('referencia'))
         if not referencia:
-            produto_atual = None
-            tamanho_atual = None
-            quantidade_pendente = None
-            ignorar_bloco = False
-            return
+            if gerar_referencia_ausente:
+                referencia = gerar_referencia_sintetica()
+            else:
+                produto_atual = None
+                tamanho_atual = None
+                quantidade_pendente = None
+                ignorar_bloco = False
+                return
 
         produto_atual['referencia'] = referencia
         anterior = produtos.get(referencia)
@@ -321,10 +335,10 @@ def planejar_importacao(produtos_db, inventario):
     return correspondencias, problemas
 
 
-def executar_importacao(app=None, aplicar=True, arquivo=None):
+def executar_importacao(app=None, aplicar=True, arquivo=None, gerar_referencia_ausente=False):
     app = app or create_app()
     with app.app_context():
-        inventario = ler_inventario(arquivo)
+        inventario = ler_inventario(arquivo, gerar_referencia_ausente=gerar_referencia_ausente)
         if arquivo is None and db.session.get(ImportacaoEstoque, IMPORT_KEY):
             return {
                 'sucesso': True,

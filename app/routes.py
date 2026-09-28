@@ -437,7 +437,12 @@ def api_admin_importar_estoque():
 
     try:
         from scripts.importar_estoque import executar_importacao
-        resultado = executar_importacao(app=current_app._get_current_object(), aplicar=True, arquivo=arquivo)
+        resultado = executar_importacao(
+            app=current_app._get_current_object(),
+            aplicar=True,
+            arquivo=arquivo,
+            gerar_referencia_ausente=True,
+        )
     except Exception as erro:
         return jsonify({"sucesso": False, "mensagem": f"Erro ao importar estoque: {erro}"}), 500
 

@@ -1,0 +1,40 @@
+Conj short saia e top e tiara ref 456
+M
+5 Preto
+3 Azul marinho
+G
+2 Branco
+
+Conj short e top e tiara
+P
+2 Rosé
+M
+3 Preto
+G
+1 Verde musgo
+
+Conj short saia e top e tiara ref 518
+M
+1 Caramelo
+G
+0
+
+Conj short duplo e top Ref ref 410
+M
+1 Pink cereja
+11rosé
+G
+2 preto
+3Azul marinho
+
+Top 2 tiras de viés
+M
+7 rosé
+G
+3 Azul marinho
+
+Conj short com tiara sem referencia
+M
+4 Nude
+G
+2 Terracota
