@@ -8,6 +8,7 @@ from sqlalchemy import inspect, text
 db = SQLAlchemy()
 login_manager = LoginManager()
 
+
 def create_app():
     app = Flask(__name__)
     em_producao = bool(os.environ.get('RENDER') or os.environ.get('RENDER_SERVICE_ID'))
@@ -90,3 +91,6 @@ def create_app():
                 app.logger.exception('Nao foi possivel criar o indice unico de referencias de produto.')
 
     return app
+
+
+app = create_app()
