@@ -239,6 +239,38 @@ def test_importacao_por_arquivo_texto_adiciona_itens_novos(monkeypatch, tmp_path
         assert produto.estoque_g == 4
 
 
+def test_importacao_por_arquivo_texto_aceita_campo_arquivo_alternativo(monkeypatch, tmp_path):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+    monkeypatch.setattr(importar_estoque, 'create_app', lambda: app)
+
+    arquivo = tmp_path / 'lote-alternativo.txt'
+    arquivo.write_text(
+        'Conj lote alternativo Ref 998\n'
+        'M\n'
+        '2 Azul marinho\n'
+        '1 Preto\n',
+        encoding='utf-8',
+    )
+
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin_logado'] = True
+        resposta = client.post('/api/admin/importar-estoque', data={
+            'file': (arquivo.open('rb'), 'lote-alternativo.txt'),
+        })
+
+    assert resposta.status_code == 200
+    dados = resposta.get_json()
+    assert dados['sucesso'] is True
+    assert dados['importada'] is True
+    with app.app_context():
+        produto = Produto.query.filter_by(codigo='998').first()
+        assert produto is not None
+        assert produto.estoque_m == 3
+
+
 def test_importacao_por_arquivo_texto_pode_adicionar_referencia_nova_apos_importacao_inicial(monkeypatch, tmp_path):
     monkeypatch.setenv('DATABASE_URL', 'sqlite://')
     app = create_app()
