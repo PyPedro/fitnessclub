@@ -4,6 +4,24 @@ from datetime import datetime
 from sqlalchemy import Boolean
 import json
 
+
+TAMANHOS_PADRAO = ('P', 'M', 'G', 'GG', 'XG', 'XGG')
+
+
+def completar_tamanhos(tamanhos, preco_padrao):
+    tamanhos_completos = [
+        tamanho for tamanho in (tamanhos or [])
+        if isinstance(tamanho, dict) and str(tamanho.get('nome', '')).strip()
+    ]
+    tamanhos_existentes = {str(tamanho['nome']).strip().casefold() for tamanho in tamanhos_completos}
+    tamanhos_completos.extend(
+        {'nome': nome, 'estoque': 0, 'preco': preco_padrao}
+        for nome in TAMANHOS_PADRAO
+        if nome.casefold() not in tamanhos_existentes
+    )
+    return tamanhos_completos
+
+
 class Produto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(50), nullable=True)
@@ -31,17 +49,17 @@ class Produto(db.Model):
     def grade_config(self):
         if self.grade:
             try:
-                return json.loads(self.grade)
+                return completar_tamanhos(json.loads(self.grade), self.preco)
             except (TypeError, json.JSONDecodeError):
                 pass
-        return [
+        return completar_tamanhos([
             {
                 'nome': tamanho,
                 'estoque': getattr(self, f'estoque_{tamanho.lower()}', 0),
                 'preco': getattr(self, f'preco_{tamanho.lower()}', None) or self.preco,
             }
-            for tamanho in ('P', 'M', 'G', 'GG', 'XG', 'XGG')
-        ]
+            for tamanho in TAMANHOS_PADRAO
+        ], self.preco)
 
     @property
     def cores_config(self):
@@ -56,7 +74,16 @@ class Produto(db.Model):
     def variantes_config(self):
         if self.variantes:
             try:
-                return json.loads(self.variantes)
+                variantes = json.loads(self.variantes)
+                if variantes:
+                    return [
+                        {
+                            **variante,
+                            'tamanhos': completar_tamanhos(variante.get('tamanhos'), self.preco),
+                        }
+                        for variante in variantes
+                        if isinstance(variante, dict)
+                    ]
             except (TypeError, json.JSONDecodeError):
                 pass
         return [{'cor': None, 'tamanhos': self.grade_config}]

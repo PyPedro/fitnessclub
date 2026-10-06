@@ -130,6 +130,30 @@ def test_cores_nomeadas_preservam_cor_de_pedidos_legados():
     assert variante['cor_nome'] == 'Azul marinho'
 
 
+def test_produto_legado_completa_tamanhos_padrao_sem_perder_grade_especial():
+    produto = Produto(
+        codigo='GRADE-LEGADA',
+        nome='Produto legado',
+        preco=25,
+        etiqueta='TESTE',
+        imagem_url='',
+        grade=json.dumps([{'nome': 'GG2', 'estoque': 3, 'preco': 25}]),
+        variantes=json.dumps([{
+            'cor': None,
+            'tamanhos': [{'nome': 'GG2', 'estoque': 3, 'preco': 25}],
+        }]),
+    )
+
+    tamanhos_grade = produto.grade_config
+    tamanhos_variante = produto.variantes_config[0]['tamanhos']
+    nomes_padrao = {'P', 'M', 'G', 'GG', 'XG', 'XGG'}
+
+    assert nomes_padrao.issubset({tamanho['nome'] for tamanho in tamanhos_grade})
+    assert nomes_padrao.issubset({tamanho['nome'] for tamanho in tamanhos_variante})
+    assert next(tamanho for tamanho in tamanhos_variante if tamanho['nome'] == 'GG2')['estoque'] == 3
+    assert all(tamanho['estoque'] == 0 for tamanho in tamanhos_variante if tamanho['nome'] in nomes_padrao)
+
+
 def test_cria_produto_novo_com_preco_zero_sem_imagem_e_grade_completa():
     inventario = {item['referencia']: item for item in ler_inventario()}
     produto = criar_produto_sem_cadastro(inventario['366'])
@@ -226,6 +250,59 @@ def test_api_cadastro_rejeita_pdf_sem_criar_produto(monkeypatch):
     assert 'somente imagens' in resposta.get_json()['mensagem']
     with app.app_context():
         assert Produto.query.filter_by(codigo='PDF-404').count() == 0
+
+
+def test_api_cadastro_e_edicao_aceitam_produto_sem_cor(monkeypatch, tmp_path):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+    app.config['UPLOAD_FOLDER'] = str(tmp_path)
+
+    imagem = BytesIO()
+    Image.new('RGB', (1, 1), color='red').save(imagem, format='PNG')
+    imagem.seek(0)
+    tamanhos = [{'nome': 'M', 'estoque': 4, 'preco': 25}]
+    variante_sem_cor = [{'cor': None, 'tamanhos': tamanhos}]
+
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin_logado'] = True
+        cadastro = client.post('/api/admin/produtos/cadastrar', data={
+            'codigo': 'SEM-COR-01',
+            'nome': 'Produto sem cor',
+            'preco': '25',
+            'grade': json.dumps(tamanhos),
+            'cores': json.dumps([None]),
+            'variantes': json.dumps(variante_sem_cor),
+            'imagens': (imagem, 'produto.png', 'image/png'),
+        })
+
+        with app.app_context():
+            produto = Produto.query.filter_by(codigo='SEM-COR-01').one()
+            produto_id = produto.id
+            tamanhos_cadastrados = json.loads(produto.variantes)[0]['tamanhos']
+            assert {tamanho['nome'] for tamanho in tamanhos_cadastrados} == {'P', 'M', 'G', 'GG', 'XG', 'XGG'}
+            assert next(tamanho for tamanho in tamanhos_cadastrados if tamanho['nome'] == 'M')['estoque'] == 4
+            assert all(tamanho['estoque'] == 0 for tamanho in tamanhos_cadastrados if tamanho['nome'] != 'M')
+
+        edicao = client.post(
+            f'/api/admin/produtos/editar/{produto_id}',
+            data={
+                'grade': json.dumps(tamanhos),
+                'cores': json.dumps([None]),
+                'variantes': json.dumps(variante_sem_cor),
+            },
+        )
+
+    assert cadastro.status_code == 200
+    assert cadastro.get_json()['sucesso'] is True
+    assert edicao.status_code == 200
+    assert edicao.get_json()['sucesso'] is True
+    with app.app_context():
+        produto = db.session.get(Produto, produto_id)
+        tamanhos_editados = json.loads(produto.variantes)[0]['tamanhos']
+        assert {tamanho['nome'] for tamanho in tamanhos_editados} == {'P', 'M', 'G', 'GG', 'XG', 'XGG'}
+        assert next(tamanho for tamanho in tamanhos_editados if tamanho['nome'] == 'M')['estoque'] == 4
 
 
 def test_api_cadastro_salva_conjunto_tamanhos_e_atualiza_referencia_renomeada(monkeypatch, tmp_path):

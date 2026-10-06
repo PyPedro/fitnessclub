@@ -1,7 +1,7 @@
 import os
 from PIL import Image, ImageOps, UnidentifiedImageError
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session, current_app
-from app.models import Produto, ProdutoImagem, Usuario, Pedido, Admin, Visita, ImagemSite, ImportacaoEstoque
+from app.models import Produto, ProdutoImagem, Usuario, Pedido, Admin, Visita, ImagemSite, ImportacaoEstoque, completar_tamanhos
 from app import db
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -624,11 +624,14 @@ def api_admin_cadastrar_produto():
         variantes_normalizadas = []
         for variante in variantes_personalizadas:
             cor = normalizar_cor(variante.get('cor'))
-            tamanhos = [{'nome': str(t.get('nome', '')).strip(), 'estoque': max(0, int(t.get('estoque', 0))), 'preco': float(t.get('preco') or preco_base)} for t in variante.get('tamanhos', []) if str(t.get('nome', '')).strip()]
-            if tamanhos and cor:
+            tamanhos = completar_tamanhos(
+                [{'nome': str(t.get('nome', '')).strip(), 'estoque': max(0, int(t.get('estoque', 0))), 'preco': float(t.get('preco') or preco_base)} for t in variante.get('tamanhos', []) if str(t.get('nome', '')).strip()],
+                preco_base,
+            )
+            if tamanhos:
                 variantes_normalizadas.append({'cor': cor, 'tamanhos': tamanhos})
         if not variantes_normalizadas:
-            return jsonify({"sucesso": False, "mensagem": "Adicione pelo menos uma cor e um tamanho válido."})
+            return jsonify({"sucesso": False, "mensagem": "Adicione pelo menos um tamanho válido."})
         cores_normalizadas = [cor for cor in (normalizar_cor(item) for item in cores_personalizadas) if cor]
         grade_normalizada = variantes_normalizadas[0]['tamanhos']
         novo_produto = Produto(codigo=codigo, nome=nome, preco=preco_base, preco_p=precos['p'], preco_m=precos['m'], preco_g=precos['g'], preco_gg=precos['gg'], grade=json.dumps(grade_normalizada, ensure_ascii=False), cores=json.dumps(cores_normalizadas), variantes=json.dumps(variantes_normalizadas, ensure_ascii=False), eh_conjunto=eh_conjunto, referencia_conjunto=referencia_conjunto, etiqueta='NOVO', imagem_url='img/default.jpg', estoque_p=quantidades[0], estoque_m=quantidades[1], estoque_g=quantidades[2], estoque_gg=quantidades[3])
@@ -685,9 +688,11 @@ def api_admin_editar_produto(id):
         if request.form.get('variantes'):
             variantes_editadas = json.loads(request.form.get('variantes'))
             variantes_editadas = [
-                {'cor': cor, 'tamanhos': variante.get('tamanhos', [])}
+                {
+                    'cor': normalizar_cor(variante.get('cor')),
+                    'tamanhos': completar_tamanhos(variante.get('tamanhos'), prod.preco),
+                }
                 for variante in variantes_editadas
-                if (cor := normalizar_cor(variante.get('cor')))
             ]
             prod.variantes = json.dumps(variantes_editadas, ensure_ascii=False)
             prod.grade = json.dumps(variantes_editadas[0].get('tamanhos', []) if variantes_editadas else [], ensure_ascii=False)

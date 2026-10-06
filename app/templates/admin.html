@@ -160,6 +160,12 @@
         .image-dropzone svg { width: 25px; height: 25px; color: var(--brand-blue); }
         .image-dropzone-copy { overflow-wrap: anywhere; }
         .image-dropzone-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+        .image-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 8px; max-height: 190px; margin-top: 8px; overflow-y: auto; }
+        .image-thumb { position: relative; min-width: 0; overflow: hidden; padding: 4px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+        .image-thumb img { display: block; width: 100%; aspect-ratio: 1; border-radius: 5px; background: #f1f5f9; object-fit: cover; }
+        .image-thumb span { display: -webkit-box; overflow: hidden; margin-top: 4px; color: var(--text-muted); font-size: 9px; line-height: 1.3; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+        .image-thumb button { position: absolute; top: 7px; right: 7px; padding: 4px 6px; border: 0; border-radius: 5px; background: rgba(15,23,42,.78); color: #fff; font-size: 9px; cursor: pointer; }
+        .image-empty-state { grid-column: 1 / -1; padding: 8px 0; color: var(--text-muted); font-size: 11px; }
         .product-save-button:disabled { opacity: .7; cursor: wait; transform: none; }
         @media (min-width: 700px) {
             .stock-product-summary { grid-template-columns: 70px minmax(0, 1fr) minmax(110px, auto) 18px; padding: 13px 16px; }
@@ -385,7 +391,7 @@
             <div class="form-group"><label>Nome do Produto</label><input type="text" id="cad_nome" required class="form-control" placeholder="Nome completo da peça"></div>
             <div class="form-group"><label><input type="checkbox" id="cad_eh_conjunto" onchange="alternarReferenciaConjunto('cad')"> Este item é conjunto</label><div id="cad_referencia_wrap" hidden><label for="cad_referencia_conjunto">Outra referência do conjunto</label><select id="cad_referencia_conjunto" class="form-control"><option value="">Selecione uma referência</option></select></div></div>
             <div class="form-group"><label>Fotos do Produto (obrigatório)</label><label class="image-dropzone" for="cad_img" data-default-text="Arraste as imagens aqui ou clique para procurar"><input type="file" id="cad_img" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" multiple required class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste as imagens aqui ou clique para procurar</span></label><div id="cad_img_preview" class="image-preview-grid"></div></div>
-            <div class="form-group variant-builder"><div class="builder-heading"><label>Cores</label><span>Escolha a cor pelo nome e configure os tamanhos</span></div><div id="cad_color_rows" class="custom-color-list"></div><button type="button" class="add-inline" onclick="adicionarLinhaCor('cad_color_rows')">+ Cor</button></div>
+            <div class="form-group variant-builder"><div class="builder-heading"><label>Cores</label><span>Cor opcional; configure os tamanhos</span></div><div id="cad_color_rows" class="custom-color-list"></div><button type="button" class="add-inline" onclick="adicionarLinhaCor('cad_color_rows')">+ Cor</button></div>
             <button id="cad_salvar" type="button" onclick="salvarNovoProduto()" class="btn-primary product-save-button" style="width: 100%; justify-content: center; padding: 14px; font-size: 14px; margin-top: 10px;">Finalizar Cadastro</button>
         </div>
     </div>
@@ -405,7 +411,7 @@
             <div class="form-group"><label>Substituir capa principal</label><label class="image-dropzone" for="edit_capa" data-default-text="Arraste suas imagens aqui ou clique para procurar"><input type="file" id="edit_capa" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste suas imagens aqui ou clique para procurar</span></label></div>
             <div class="form-group"><label>Adicionar fotos (deixe em branco para manter as atuais)</label><label class="image-dropzone" for="edit_img" data-default-text="Arraste suas imagens aqui ou clique para procurar"><input type="file" id="edit_img" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" multiple class="image-dropzone-input"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="image-dropzone-copy">Arraste suas imagens aqui ou clique para procurar</span></label><div id="edit_img_preview" class="image-preview-grid"></div></div>
             <div class="form-group"><label>Imagens cadastradas</label><div id="edit_imagens_existentes" class="image-preview-grid existing-image-grid"></div></div>
-            <div class="form-group variant-builder"><div class="builder-heading"><label>Cores</label><span>Escolha a cor pelo nome e configure os tamanhos</span></div><div id="edit_color_rows" class="custom-color-list"></div><button type="button" class="add-inline" onclick="adicionarLinhaCor('edit_color_rows')">+ Cor</button></div>
+            <div class="form-group variant-builder"><div class="builder-heading"><label>Cores</label><span>Cor opcional; configure os tamanhos</span></div><div id="edit_color_rows" class="custom-color-list"></div><button type="button" class="add-inline" onclick="adicionarLinhaCor('edit_color_rows')">+ Cor</button></div>
             <button id="edit_salvar" type="button" onclick="salvarEdicaoProduto()" class="btn-primary product-save-button" style="width: 100%; justify-content: center; padding: 14px; font-size: 14px; margin-top: 10px;">Salvar Alterações</button>
         </div>
     </div>
@@ -703,7 +709,7 @@
             const nome = Object.keys(PALETA_CORES_VARIANTES).find(item => item.toLocaleLowerCase('pt-BR') === String(cor || '').toLocaleLowerCase('pt-BR'));
             if (nome) return nome;
             const hex = /^#[0-9a-f]{6}$/i.test(cor || '') ? Object.entries(PALETA_CORES_VARIANTES).find(([, valor]) => valor.toLowerCase() === cor.toLowerCase())?.[0] : null;
-            return hex || cor || 'Preto';
+            return hex || cor || null;
         }
 
         function corHexEditor(cor) {
@@ -861,12 +867,22 @@
             }
         });
 
+        const TAMANHOS_PADRAO = ['P', 'M', 'G', 'GG', 'XG', 'XGG'];
         let variantesEditor = { cad: [], edit: [] };
         let varianteAtualEditor = null;
 
-        function adicionarLinhaCor(containerId, cor = 'Preto', tamanhos = []) {
+        function completarTamanhosPadrao(tamanhos = []) {
+            const resultado = Array.isArray(tamanhos) ? tamanhos.map(tamanho => ({ ...tamanho })) : [];
+            const existentes = new Set(resultado.map(tamanho => String(tamanho.nome || '').trim().toLocaleUpperCase('pt-BR')));
+            TAMANHOS_PADRAO.forEach(nome => {
+                if (!existentes.has(nome)) resultado.push({ nome, estoque: 0, preco: null });
+            });
+            return resultado;
+        }
+
+        function adicionarLinhaCor(containerId, cor = null, tamanhos = []) {
             const prefixo = containerId === 'cad_color_rows' ? 'cad' : 'edit';
-            variantesEditor[prefixo].push({ cor, tamanhos });
+            variantesEditor[prefixo].push({ cor, tamanhos: completarTamanhosPadrao(tamanhos) });
             renderizarCores(prefixo);
         }
 
@@ -883,6 +899,7 @@
                 const seletor = document.createElement('select');
                 seletor.className = 'product-color-name';
                 seletor.setAttribute('aria-label', 'Cor da variação');
+                seletor.add(new Option('Sem cor', ''));
                 Object.keys(PALETA_CORES_VARIANTES).forEach(nome => seletor.add(new Option(nome, nome)));
                 if (!Object.hasOwn(PALETA_CORES_VARIANTES, variante.cor)) seletor.add(new Option(`Cor existente (${variante.cor})`, variante.cor));
                 seletor.value = variante.cor;
@@ -909,6 +926,9 @@
             const container = document.getElementById(containerId);
             if (!input || !container) return;
             const arquivos = Array.from(input.files || []);
+            container.querySelectorAll('img').forEach(imagem => {
+                if (imagem.src.startsWith('blob:')) URL.revokeObjectURL(imagem.src);
+            });
             if (!arquivos.length) {
                 container.innerHTML = '<span class="image-empty-state">Nenhuma imagem selecionada.</span>';
                 return;
@@ -960,11 +980,12 @@
             varianteEditorPrefixo = prefixo;
             varianteAtualEditor = indice;
             const variante = variantesEditor[prefixo][indice];
-            document.getElementById('variantEditorTitle').innerText = `Grade: ${variante.cor}`;
+            variante.tamanhos = completarTamanhosPadrao(variante.tamanhos);
+            document.getElementById('variantEditorTitle').innerText = `Grade: ${variante.cor || 'Sem cor'}`;
             document.getElementById('variantEditorSwatch').style.background = corHexEditor(variante.cor);
             document.getElementById('variantEditorRows').innerHTML = '';
             document.getElementById('variantEditorFeedback').textContent = '';
-            (variante.tamanhos.length ? variante.tamanhos : [{ nome: '', estoque: 0, preco: precoBaseEditor() }]).forEach(tamanho => adicionarLinhaEditorVariante(tamanho));
+            variante.tamanhos.forEach(tamanho => adicionarLinhaEditorVariante(tamanho));
             document.getElementById('variantEditor').classList.add('open');
         }
 
@@ -1004,13 +1025,13 @@
                 return;
             }
             variantesEditor[varianteEditorPrefixo].forEach(variante => {
-                variante.tamanhos = tamanhos.map(tamanho => ({ ...tamanho }));
+                variante.tamanhos = completarTamanhosPadrao(tamanhos);
             });
             document.getElementById('variantEditorFeedback').textContent = 'Tamanhos aplicados a todas as cores.';
         }
 
         function salvarEditorVariante() {
-            variantesEditor[varianteEditorPrefixo][varianteAtualEditor].tamanhos = lerTamanhosEditorAtual();
+            variantesEditor[varianteEditorPrefixo][varianteAtualEditor].tamanhos = completarTamanhosPadrao(lerTamanhosEditorAtual());
             fecharEditorVariante();
         }
 
@@ -1019,7 +1040,11 @@
                 const input = area.querySelector('input[type="file"]');
                 const texto = area.querySelector('.image-dropzone-copy');
                 const atualizarTexto = () => {
-                    texto.textContent = input.files.length ? Array.from(input.files).map(arquivo => arquivo.name).join(', ') : area.dataset.defaultText;
+                    const arquivos = Array.from(input.files || []);
+                    texto.textContent = arquivos.length
+                        ? `${arquivos.length} ${arquivos.length === 1 ? 'imagem selecionada' : 'imagens selecionadas'} — clique para alterar`
+                        : area.dataset.defaultText;
+                    area.title = arquivos.map(arquivo => arquivo.name).join(', ');
                     if (input.id === 'cad_img') atualizarPreviewUpload('cad_img', 'cad_img_preview');
                     if (input.id === 'edit_img') atualizarPreviewUpload('edit_img', 'edit_img_preview');
                 };
@@ -1049,8 +1074,8 @@
         function lerGrade() { return []; }
         function preencherCores(containerId, cores, variantes = []) {
             const prefixo = containerId === 'cad_color_rows' ? 'cad' : 'edit';
-            variantesEditor[prefixo] = variantes.length ? variantes.map(item => ({ cor: item.cor, tamanhos: item.tamanhos || [] })) : (cores || []).map(cor => ({ cor, tamanhos: [] }));
-            if (!variantesEditor[prefixo].length) variantesEditor[prefixo] = [{ cor: 'Preto', tamanhos: [] }];
+            variantesEditor[prefixo] = variantes.length ? variantes.map(item => ({ cor: item.cor, tamanhos: completarTamanhosPadrao(item.tamanhos) })) : (cores || []).map(cor => ({ cor, tamanhos: completarTamanhosPadrao() }));
+            if (!variantesEditor[prefixo].length) variantesEditor[prefixo] = [{ cor: null, tamanhos: completarTamanhosPadrao() }];
             renderizarCores(prefixo);
         }
 
