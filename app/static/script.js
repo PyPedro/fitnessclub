@@ -428,6 +428,11 @@ function alterarQuantidade(cartId, delta) {
     atualizarCarrinho();
 }
 
+function removerItemCarrinho(cartId) {
+    carrinho = carrinho.filter(item => item.cartId !== cartId);
+    atualizarCarrinho();
+}
+
 function atualizarCarrinho() {
     const cartItemsContainer = document.getElementById('cartItems');
     const cartCount = document.getElementById('cartCount');
@@ -494,6 +499,7 @@ function atualizarCarrinho() {
                                 <button onclick="alterarQuantidade('${t.cartId}', -1)" style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: #e2e8f0; color: #475569; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; transition: 0.2s;" onmouseover="this.style.background='#cbd5e1'" onmouseout="this.style.background='#e2e8f0'">-</button>
                                 <span style="font-size: 12px; font-weight: 700; color: #0f172a; min-width: 14px; text-align: center;">${t.quantidade}</span>
                                 <button onclick="alterarQuantidade('${t.cartId}', 1)" style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: #e2e8f0; color: #475569; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; transition: 0.2s;" onmouseover="this.style.background='#cbd5e1'" onmouseout="this.style.background='#e2e8f0'">+</button>
+                                <button onclick="removerItemCarrinho('${t.cartId}')" aria-label="Remover tamanho ${t.tamanho} da sacola" title="Remover item" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-left: 3px; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; cursor: pointer; border-radius: 4px; font-size: 17px; line-height: 1;">&times;</button>
                             </div>
                         `).join('')}
                     </div>
@@ -520,7 +526,29 @@ function atualizarCarrinho() {
                 frete: freteSelecionadoValor, 
                 frete_tipo: tipoFrete 
             })
-        }).catch(err => console.log("Sincronizando em background..."));
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.sucesso || !data.item_indisponivel) return;
+
+            const indisponivel = data.item_indisponivel;
+            const item = carrinho.find(item =>
+                indisponivel.cart_id &&
+                item.cartId === indisponivel.cart_id &&
+                item.quantidade === indisponivel.quantidade
+            ) || carrinho.find(item =>
+                item.id === indisponivel.id &&
+                String(item.tamanho).toLowerCase() === String(indisponivel.tamanho).toLowerCase() &&
+                (item.cor ?? null) === (indisponivel.cor ?? null) &&
+                item.quantidade === indisponivel.quantidade
+            );
+            if (!item) return;
+
+            carrinho = carrinho.filter(itemCarrinho => itemCarrinho !== item);
+            atualizarCarrinho();
+            mostrarAviso(data.mensagem, 'Sacola indisponível');
+        })
+        .catch(err => console.log("Sincronizando em background..."));
     }
 }
 

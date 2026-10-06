@@ -910,7 +910,17 @@ def sync_carrinho():
             prod = Produto.query.get(item['id'])
             if not prod:
                 db.session.rollback()
-                return jsonify({"sucesso": False, "mensagem": f"O produto '{item['nome']}' foi removido do catálogo."})
+                return jsonify({
+                    "sucesso": False,
+                    "mensagem": f"O produto '{item['nome']}' foi removido do catálogo.",
+                    "item_indisponivel": {
+                        "cart_id": item.get('cartId'),
+                        "id": item['id'],
+                        "tamanho": item['tamanho'],
+                        "cor": item.get('cor'),
+                        "quantidade": int(item['quantidade']),
+                    },
+                })
             
             variante_configurada = next((variante for variante in variantes_do_produto(prod) if chave_cor(variante.get('cor')) == chave_cor(item.get('cor'))), None)
             tamanho_configurado = next((tamanho for tamanho in (variante_configurada or {}).get('tamanhos', []) if tamanho['nome'].casefold() == str(item['tamanho']).casefold()), None)
@@ -920,7 +930,14 @@ def sync_carrinho():
                 db.session.rollback()
                 return jsonify({
                     "sucesso": False, 
-                    "mensagem": f"O item '{item['nome']}' (Tam: {item['tamanho'].upper()}) esgotou ou não possui a quantidade desejada. Restam {estoque_disp} unidades no momento."
+                    "mensagem": f"O item '{item['nome']}' (Tam: {item['tamanho'].upper()}) esgotou ou não possui a quantidade desejada. Restam {estoque_disp} unidades no momento.",
+                    "item_indisponivel": {
+                        "cart_id": item.get('cartId'),
+                        "id": item['id'],
+                        "tamanho": item['tamanho'],
+                        "cor": item.get('cor'),
+                        "quantidade": int(item['quantidade']),
+                    },
                 })
 
     if not novo_carrinho and pedido:
