@@ -90,6 +90,10 @@ def create_app():
                 conexao.execute(text('ALTER TABLE produto ADD COLUMN cores TEXT'))
             if 'variantes' not in colunas_produto:
                 conexao.execute(text('ALTER TABLE produto ADD COLUMN variantes TEXT'))
+            if 'eh_conjunto' not in colunas_produto:
+                conexao.execute(text('ALTER TABLE produto ADD COLUMN eh_conjunto BOOLEAN NOT NULL DEFAULT FALSE'))
+            if 'referencia_conjunto' not in colunas_produto:
+                conexao.execute(text('ALTER TABLE produto ADD COLUMN referencia_conjunto VARCHAR(50)'))
 
         duplicados = db.session.execute(text(
             "SELECT lower(trim(codigo)), COUNT(*) FROM produto "

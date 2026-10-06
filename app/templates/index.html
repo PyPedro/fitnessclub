@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fitness Club | Atacado Direto de Fábrica</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=21">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=22">
 </head>
 <body>
 
@@ -120,10 +121,11 @@
                 <div class="product-info">
                     <div class="product-brand">FITNESS CLUB</div>
                     <h3 class="product-name">{{ p.nome }}</h3>
-                    {% if p.cores_config %}<div class="product-colors" aria-label="Cores disponíveis">{% for cor in p.cores_config %}<span class="product-color-swatch" style="--swatch-color: {{ cor }}" title="Cor disponível"></span>{% endfor %}</div>{% endif %}
+                    <div class="product-colors" aria-label="Cores variadas">Cores variadas</div>
+                    {% if p.eh_conjunto and conjuntos_relacionados.get(p.id) %}<div class="product-set-note">Disponível avulso ou em conjunto completo</div>{% endif %}
                     <div class="product-price">A partir de R$ {{ "%.2f"|format(p.preco) | replace('.', ',') }} <span style="font-size: 10px; color: #777; font-weight: 400;">(Atacado)</span></div>
                     
-                    <button class="btn-add-minimal" onclick='abrirModalGrade({{ p.id }}, {{ p.nome|tojson }}, {{ p.variantes_config|tojson }}, {{ url_for("static", filename=p.imagem_url)|tojson }})'>
+                    <button class="btn-add-minimal" onclick='abrirModalGrade({{ p.id }}, {{ p.nome|tojson }}, {{ p.variantes_config|tojson }}, {{ url_for("static", filename=p.imagem_url)|tojson }}, {{ "true" if p.eh_conjunto else "false" }}, {{ conjuntos_relacionados.get(p.id, none)|tojson }})'>
                         Montar Grade
                     </button>
                 </div>
@@ -285,19 +287,33 @@
     <div id="gradeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10005; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
         <div style="background: #fff; padding: 25px; border-radius: 12px; max-width: 350px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;">
             <button onclick="fecharModalGrade()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 16px; cursor: pointer;">✕</button>
-            <h3 style="font-size: 15px; font-weight: 800; color: var(--brand-purple); margin-bottom: 5px;">Escolha cor, tamanho e quantidade</h3>
+            <h3 style="font-size: 15px; font-weight: 800; color: var(--brand-purple); margin-bottom: 5px;">Escolha tamanho e quantidade</h3>
             <p id="gradeNomeProduto" style="font-size: 12px; color: #666; margin-bottom: 20px; font-weight: 600; line-height: 1.4;"></p>
             
             <div id="productColorChoices" class="product-color-choices"></div>
+            <div id="productPurchaseModes" style="display: none; gap: 8px; margin: 0 0 14px;">
+                <button type="button" data-purchase-mode="individual" onclick="selecionarModoCompra('individual')" class="btn-add-minimal">Peça avulsa</button>
+                <button type="button" data-purchase-mode="conjunto" onclick="selecionarModoCompra('conjunto')" class="btn-add-minimal">Conjunto completo</button>
+            </div>
             <div id="productGradeRows" class="size-grid"></div>
+            <div id="bundlePurchasePanel" hidden>
+                <p style="margin: 0 0 12px; color: #666; font-size: 11px; line-height: 1.5;">As duas peças serão adicionadas à sacola. Você escolhe o tamanho de cada uma; as cores são enviadas aleatoriamente no atacado.</p>
+                <label style="display: block; margin: 0 0 5px; font-size: 11px; font-weight: 700;">Tamanho de <span id="bundlePrimaryName"></span></label>
+                <select id="bundlePrimarySize" class="form-control" onchange="atualizarDisponibilidadeConjunto()"></select>
+                <label style="display: block; margin: 12px 0 5px; font-size: 11px; font-weight: 700;">Tamanho de <span id="bundleRelatedName"></span></label>
+                <select id="bundleRelatedSize" class="form-control" onchange="atualizarDisponibilidadeConjunto()"></select>
+                <label style="display: block; margin: 12px 0 5px; font-size: 11px; font-weight: 700;">Quantidade de conjuntos</label>
+                <input id="bundleQuantity" type="number" class="form-control" min="1" value="1">
+                <p id="bundlePrice" style="margin: 10px 0 14px; color: #444; font-size: 12px; font-weight: 700;"></p>
+            </div>
 
-            <button onclick="confirmarGrade()" style="width: 100%; padding: 12px; background: var(--brand-purple); color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;">ADICIONAR À SACOLA</button>
+            <button id="gradeConfirmButton" onclick="confirmarGrade()" style="width: 100%; padding: 12px; background: var(--brand-purple); color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;">ADICIONAR À SACOLA</button>
         </div>
     </div>
 
     <script>
         const usuarioLogado = {{ 'true' if usuario_logado else 'false' }};
     </script>
-    <script src="{{ url_for('static', filename='script.js') }}?v=14"></script>
+    <script src="{{ url_for('static', filename='script.js') }}?v=15"></script>
 </body>
 </html>

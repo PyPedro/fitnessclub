@@ -16,6 +16,8 @@ class Produto(db.Model):
     grade = db.Column(db.Text, nullable=True)
     cores = db.Column(db.Text, nullable=True)
     variantes = db.Column(db.Text, nullable=True)
+    eh_conjunto = db.Column(Boolean, default=False, nullable=False)
+    referencia_conjunto = db.Column(db.String(50), nullable=True)
     etiqueta = db.Column(db.String(50), nullable=False)
     imagem_url = db.Column(db.String(200), nullable=False)
     
@@ -33,8 +35,12 @@ class Produto(db.Model):
             except (TypeError, json.JSONDecodeError):
                 pass
         return [
-            {'nome': tamanho, 'estoque': getattr(self, f'estoque_{tamanho.lower()}'), 'preco': getattr(self, f'preco_{tamanho.lower()}') or self.preco}
-            for tamanho in ('P', 'M', 'G', 'GG')
+            {
+                'nome': tamanho,
+                'estoque': getattr(self, f'estoque_{tamanho.lower()}', 0),
+                'preco': getattr(self, f'preco_{tamanho.lower()}', None) or self.preco,
+            }
+            for tamanho in ('P', 'M', 'G', 'GG', 'XG', 'XGG')
         ]
 
     @property

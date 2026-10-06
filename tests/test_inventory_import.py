@@ -228,6 +228,56 @@ def test_api_cadastro_rejeita_pdf_sem_criar_produto(monkeypatch):
         assert Produto.query.filter_by(codigo='PDF-404').count() == 0
 
 
+def test_api_cadastro_salva_conjunto_tamanhos_e_atualiza_referencia_renomeada(monkeypatch, tmp_path):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+    app.config['UPLOAD_FOLDER'] = str(tmp_path)
+    with app.app_context():
+        relacionado = Produto(codigo='TOP-02', nome='Top', preco=50, etiqueta='TESTE', imagem_url='')
+        db.session.add(relacionado)
+        db.session.commit()
+        relacionado_id = relacionado.id
+
+    imagem = BytesIO()
+    Image.new('RGB', (1, 1), color='red').save(imagem, format='PNG')
+    imagem.seek(0)
+    tamanhos = [
+        {'nome': nome, 'estoque': 2, 'preco': 100}
+        for nome in ('P', 'M', 'G', 'GG', 'XG', 'XGG')
+    ]
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin_logado'] = True
+        resposta = client.post('/api/admin/produtos/cadastrar', data={
+            'codigo': 'LEGGING-02',
+            'nome': 'Legging',
+            'preco': '100',
+            'grade': json.dumps(tamanhos),
+            'cores': json.dumps(['Preto']),
+            'variantes': json.dumps([{'cor': 'Preto', 'tamanhos': tamanhos}]),
+            'eh_conjunto': 'true',
+            'referencia_conjunto': 'TOP-02',
+            'imagens': (imagem, 'legging.png', 'image/png'),
+        })
+
+        dados_produtos = client.get('/api/admin/produtos').get_json()
+        resposta_renomear = client.post(
+            f'/api/admin/produtos/editar/{relacionado_id}',
+            data={'codigo': 'TOP-03', 'nome': 'Top'},
+        )
+
+    assert resposta.status_code == 200
+    assert resposta.get_json()['sucesso'] is True
+    produto = next(item for item in dados_produtos if item['codigo'] == 'LEGGING-02')
+    assert produto['eh_conjunto'] is True
+    assert produto['referencia_conjunto'] == 'TOP-02'
+    assert [item['nome'] for item in produto['grade']] == ['P', 'M', 'G', 'GG', 'XG', 'XGG']
+    assert resposta_renomear.status_code == 200
+    with app.app_context():
+        assert Produto.query.filter_by(codigo='LEGGING-02').one().referencia_conjunto == 'TOP-03'
+
+
 def test_apply_cria_60_produtos_e_nao_duplica_na_reexecucao(monkeypatch):
     monkeypatch.setenv('DATABASE_URL', 'sqlite://')
     app = create_app()

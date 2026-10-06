@@ -185,66 +185,144 @@ function toggleCarrinho() {
     }
 }
 
-function abrirModalGrade(id, nome, variantes, imagem) {
-    if (!usuarioLogado) { 
-        mostrarAviso("Faça login ou cadastre-se para montar seu pedido de atacado.", "Acesso Lojista"); 
-        abrirAuthModal(); 
-        return; 
-    }
-    
-    produtoTemp = { id, nome, imagem, variantes, varianteSelecionada: 0 };
-    document.getElementById('gradeNomeProduto').innerText = nome;
-
-    const totalPecas = (variantes || []).reduce((total, variante) => {
-        return total + (variante.tamanhos || []).reduce((soma, tamanho) => soma + Number(tamanho.estoque || 0), 0);
-    }, 0);
-    document.getElementById('gradeResumo').textContent = `${variantes.length} cores · ${totalPecas} peças`;
-
-    const opcoesDeCor = document.getElementById('productColorChoices');
-    opcoesDeCor.replaceChildren();
-    variantes.forEach((variante, indice) => {
-        const botao = document.createElement('button');
-        botao.type = 'button';
-        botao.className = `product-color-choice${indice === 0 ? ' active' : ''}`;
-        botao.style.setProperty('--choice-color', variante.cor_hex || '#1c1c1a');
-        const nomeCor = variante.cor_nome || variante.cor || 'Cor não definida';
-        botao.setAttribute('aria-label', `Selecionar cor ${nomeCor}`);
-        botao.title = nomeCor;
-        botao.innerHTML = `
-            <span class="product-color-choice-main">
-                <span class="product-color-choice-swatch" aria-hidden="true"></span>
-                <span class="product-color-choice-label">${nomeCor}</span>
-            </span>
-            <span class="product-size-badges">${(variante.tamanhos || []).map(tamanho => `<span class="size-badge">${tamanho.nome}: ${tamanho.estoque}</span>`).join('')}</span>
-        `;
-        botao.addEventListener('click', () => selecionarCorProduto(indice));
-        opcoesDeCor.appendChild(botao);
+function tamanhosDisponiveis(produto) {
+    const ordemTamanhos = ['P', 'M', 'G', 'GG', 'XG', 'XGG'];
+    const tamanhos = new Map();
+    (produto.variantes || []).forEach(variante => {
+        (variante.tamanhos || []).forEach(tamanho => {
+            const nome = String(tamanho.nome || '').toUpperCase();
+            if (!nome) return;
+            const atual = tamanhos.get(nome) || { nome, estoque: 0, precos: [] };
+            atual.estoque += Number(tamanho.estoque) || 0;
+            atual.precos.push(Number(tamanho.preco) || 0);
+            tamanhos.set(nome, atual);
+        });
     });
-    renderizarTamanhosProduto();
+    return Array.from(tamanhos.values()).sort((a, b) => {
+        const indiceA = ordemTamanhos.indexOf(a.nome);
+        const indiceB = ordemTamanhos.indexOf(b.nome);
+        return (indiceA < 0 ? ordemTamanhos.length : indiceA) - (indiceB < 0 ? ordemTamanhos.length : indiceB);
+    });
+}
 
+function quantidadeNoCarrinho(produtoId, cor, tamanho) {
+    return carrinho.reduce((total, item) => total + (
+        item.id === produtoId && item.tamanho === tamanho && item.cor === cor ? item.quantidade : 0
+    ), 0);
+}
+
+function estoqueDisponivelTamanho(produto, tamanho) {
+    return (produto.variantes || []).reduce((total, variante) => {
+        const item = (variante.tamanhos || []).find(opcao => String(opcao.nome).toUpperCase() === tamanho);
+        return total + Math.max(0, (Number(item?.estoque) || 0) - quantidadeNoCarrinho(produto.id, variante.cor ?? null, tamanho));
+    }, 0);
+}
+
+function formatarValor(valor) {
+    return `R$ ${Number(valor || 0).toFixed(2).replace('.', ',')}`;
+}
+
+function faixaDePreco(produto, tamanho) {
+    const valores = (produto.variantes || []).flatMap(variante => (variante.tamanhos || [])
+        .filter(opcao => String(opcao.nome).toUpperCase() === tamanho && Number(opcao.estoque) > 0)
+        .map(opcao => Number(opcao.preco) || 0));
+    if (!valores.length) return '';
+    const menor = Math.min(...valores);
+    const maior = Math.max(...valores);
+    return menor === maior ? formatarValor(menor) : `${formatarValor(menor)} a ${formatarValor(maior)}`;
+}
+
+function abrirModalGrade(id, nome, variantes, imagem, ehConjunto = false, relacionado = null) {
+    if (!usuarioLogado) {
+        mostrarAviso("Faça login ou cadastre-se para montar seu pedido de atacado.", "Acesso Lojista");
+        abrirAuthModal();
+        return;
+    }
+
+    produtoTemp = { id, nome, imagem, variantes, ehConjunto, relacionado, modoCompra: 'individual' };
+    document.getElementById('gradeNomeProduto').innerText = nome;
+    document.getElementById('productColorChoices').textContent = 'Cores variadas. No atacado, as cores são enviadas de maneira aleatória.';
+    const modos = document.getElementById('productPurchaseModes');
+    modos.style.display = ehConjunto && relacionado ? 'flex' : 'none';
+    if (relacionado) {
+        document.getElementById('bundlePrimaryName').textContent = nome;
+        document.getElementById('bundleRelatedName').textContent = relacionado.nome;
+        preencherOpcoesTamanhoConjunto('bundlePrimarySize', produtoTemp);
+        preencherOpcoesTamanhoConjunto('bundleRelatedSize', relacionado);
+    }
+    selecionarModoCompra('individual');
     document.getElementById('gradeModal').style.display = 'flex';
 }
 
-function selecionarCorProduto(indice) {
-    produtoTemp.varianteSelecionada = indice;
-    document.querySelectorAll('.product-color-choice').forEach((botao, index) => botao.classList.toggle('active', index === indice));
+function selecionarModoCompra(modo) {
+    if (!produtoTemp) return;
+    produtoTemp.modoCompra = modo;
+    const compraEmConjunto = modo === 'conjunto' && produtoTemp.ehConjunto && produtoTemp.relacionado;
+    document.getElementById('productGradeRows').hidden = Boolean(compraEmConjunto);
+    document.getElementById('bundlePurchasePanel').hidden = !compraEmConjunto;
+    document.querySelectorAll('#productPurchaseModes [data-purchase-mode]').forEach(botao => {
+        const selecionado = botao.dataset.purchaseMode === modo;
+        botao.classList.toggle('active', selecionado);
+        botao.setAttribute('aria-pressed', String(selecionado));
+    });
+    document.getElementById('gradeConfirmButton').textContent = compraEmConjunto ? 'ADICIONAR CONJUNTO À SACOLA' : 'ADICIONAR À SACOLA';
     renderizarTamanhosProduto();
+    if (produtoTemp.relacionado) atualizarDisponibilidadeConjunto();
+}
+
+function preencherOpcoesTamanhoConjunto(selectId, produto) {
+    const seletor = document.getElementById(selectId);
+    const anterior = seletor.value;
+    seletor.replaceChildren();
+    tamanhosDisponiveis(produto).forEach(tamanho => {
+        const disponivel = estoqueDisponivelTamanho(produto, tamanho.nome);
+        const opcao = new Option(`${tamanho.nome} · ${disponivel} un. · ${faixaDePreco(produto, tamanho.nome)}`, tamanho.nome, false, false);
+        opcao.disabled = disponivel === 0;
+        seletor.add(opcao);
+    });
+    if (Array.from(seletor.options).some(opcao => opcao.value === anterior && !opcao.disabled)) {
+        seletor.value = anterior;
+    } else {
+        seletor.value = Array.from(seletor.options).find(opcao => !opcao.disabled)?.value || '';
+    }
+}
+
+function atualizarDisponibilidadeConjunto() {
+    if (!produtoTemp?.relacionado) return;
+    const tamanhoPrincipal = document.getElementById('bundlePrimarySize').value;
+    const tamanhoRelacionado = document.getElementById('bundleRelatedSize').value;
+    const saldoPrincipal = estoqueDisponivelTamanho(produtoTemp, tamanhoPrincipal);
+    const saldoRelacionado = estoqueDisponivelTamanho(produtoTemp.relacionado, tamanhoRelacionado);
+    const limite = Math.min(saldoPrincipal, saldoRelacionado);
+    const quantidade = document.getElementById('bundleQuantity');
+    quantidade.max = limite;
+    quantidade.disabled = limite === 0;
+    quantidade.value = limite === 0 ? 0 : Math.min(Math.max(1, Number(quantidade.value) || 1), limite);
+    const precoPrincipal = Math.min(...(produtoTemp.variantes || []).flatMap(variante => (variante.tamanhos || [])
+        .filter(item => String(item.nome).toUpperCase() === tamanhoPrincipal && Number(item.estoque) > 0).map(item => Number(item.preco) || 0)));
+    const precoRelacionado = Math.min(...(produtoTemp.relacionado.variantes || []).flatMap(variante => (variante.tamanhos || [])
+        .filter(item => String(item.nome).toUpperCase() === tamanhoRelacionado && Number(item.estoque) > 0).map(item => Number(item.preco) || 0)));
+    document.getElementById('bundlePrice').textContent = `Conjunto a partir de ${formatarValor(precoPrincipal + precoRelacionado)} por par`;
 }
 
 function renderizarTamanhosProduto() {
-    const variante = produtoTemp.variantes[produtoTemp.varianteSelecionada];
-    document.getElementById('productGradeRows').innerHTML = variante.tamanhos.map((tamanho, indice) => `
-        <div class="size-row">
-            <div class="size-row-label">
-                <span class="size-row-letter">${tamanho.nome}</span>
-                <span class="size-row-meta">R$ ${Number(tamanho.preco).toFixed(2).replace('.', ',')}</span>
+    const produto = produtoTemp;
+    const tamanhos = tamanhosDisponiveis(produto);
+    document.getElementById('productGradeRows').innerHTML = tamanhos.map((tamanho, indice) => {
+        const disponivel = estoqueDisponivelTamanho(produto, tamanho.nome);
+        return `
+            <div class="size-row">
+                <div class="size-row-label">
+                    <span class="size-row-letter">${tamanho.nome}</span>
+                    <span class="size-row-meta">${faixaDePreco(produto, tamanho.nome)}</span>
+                </div>
+                <label class="size-chip">
+                    <span>Qtd.</span>
+                    <input type="number" id="inputGrade_${indice}" class="size-input" min="0" max="${disponivel}" value="0" ${disponivel === 0 ? 'disabled' : ''}>
+                </label>
             </div>
-            <label class="size-chip">
-                <span>Qtd.</span>
-                <input type="number" id="inputGrade_${indice}" class="size-input" min="0" max="${tamanho.estoque}" value="0" ${tamanho.estoque === 0 ? 'disabled' : ''}>
-            </label>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function fecharModalGrade() {
@@ -252,50 +330,86 @@ function fecharModalGrade() {
 }
 
 function confirmarGrade() {
-    let qtdeTotal = 0;
-    
-    const variante = produtoTemp.variantes[produtoTemp.varianteSelecionada];
-    variante.tamanhos.forEach((tamanho, indice) => {
-        let qtdeInput = parseInt(document.getElementById('inputGrade_' + indice).value) || 0;
-        
-        if (qtdeInput > 0) {
-            let maxEstoque = Number(tamanho.estoque);
-            let cartId = produtoTemp.id + '_' + variante.cor + '_' + tamanho.nome; 
-            
-            let itemExistente = carrinho.find(i => i.cartId === cartId);
-            let qtdeNoCarrinho = itemExistente ? itemExistente.quantidade : 0;
-            
-            if (qtdeNoCarrinho + qtdeInput > maxEstoque) {
-                mostrarAviso(`Estoque insuficiente para o tamanho ${tamanho.nome}. Você já tem ${qtdeNoCarrinho} na sacola e restam apenas ${maxEstoque} na fábrica.`, "Limite de Grade");
+    let novosItens = [];
+    if (produtoTemp.modoCompra === 'conjunto' && produtoTemp.ehConjunto && produtoTemp.relacionado) {
+        const tamanhoPrincipal = document.getElementById('bundlePrimarySize').value;
+        const tamanhoRelacionado = document.getElementById('bundleRelatedSize').value;
+        const quantidade = Number(document.getElementById('bundleQuantity').value) || 0;
+        if (!quantidade) {
+            mostrarAviso('Selecione tamanhos disponíveis e a quantidade de conjuntos.', 'Atenção');
+            return;
+        }
+        const itensPrincipal = distribuirPorCor(produtoTemp, tamanhoPrincipal, quantidade);
+        const itensRelacionado = distribuirPorCor(produtoTemp.relacionado, tamanhoRelacionado, quantidade);
+        if (!itensPrincipal || !itensRelacionado) {
+            mostrarAviso('Estoque insuficiente para completar o conjunto nos tamanhos escolhidos.', 'Estoque indisponível');
+            return;
+        }
+        novosItens = [...itensPrincipal, ...itensRelacionado];
+    } else {
+        const tamanhos = tamanhosDisponiveis(produtoTemp);
+        for (let indice = 0; indice < tamanhos.length; indice++) {
+            const quantidade = Number(document.getElementById(`inputGrade_${indice}`).value) || 0;
+            if (!quantidade) continue;
+            const itens = distribuirPorCor(produtoTemp, tamanhos[indice].nome, quantidade);
+            if (!itens) {
+                mostrarAviso(`Estoque insuficiente para o tamanho ${tamanhos[indice].nome}.`, 'Estoque indisponível');
                 return;
             }
-
-            if (itemExistente) {
-                itemExistente.quantidade += qtdeInput;
-            } else {
-                carrinho.push({
-                    cartId: cartId,
-                    id: produtoTemp.id,
-                    tamanho: tamanho.nome,
-                    cor: variante.cor,
-                    nome: produtoTemp.nome,
-                    preco: parseFloat(tamanho.preco),
-                    quantidade: qtdeInput,
-                    imagem: produtoTemp.imagem,
-                    estoqueMax: maxEstoque
-                });
-            }
-            qtdeTotal += qtdeInput;
+            novosItens.push(...itens);
         }
-    });
-
-    if (qtdeTotal > 0) {
-        fecharModalGrade();
-        atualizarCarrinho();
-        if (!document.getElementById('cartDrawer').classList.contains('open')) toggleCarrinho();
-    } else {
-        mostrarAviso("Selecione a quantidade de pelo menos 1 tamanho para adicionar à sacola.", "Atenção");
     }
+
+    if (!novosItens.length) {
+        mostrarAviso('Selecione a quantidade de pelo menos 1 tamanho para adicionar à sacola.', 'Atenção');
+        return;
+    }
+    novosItens.forEach(novo => {
+        const existente = carrinho.find(item => item.cartId === novo.cartId);
+        if (existente) existente.quantidade += novo.quantidade;
+        else carrinho.push(novo);
+    });
+    fecharModalGrade();
+    atualizarCarrinho();
+    if (!document.getElementById('cartDrawer').classList.contains('open')) toggleCarrinho();
+}
+
+function distribuirPorCor(produto, tamanho, quantidade) {
+    const candidatos = (produto.variantes || []).map(variante => {
+        const item = (variante.tamanhos || []).find(opcao => String(opcao.nome).toUpperCase() === tamanho);
+        const estoqueMax = Number(item?.estoque) || 0;
+        const disponivel = Math.max(0, estoqueMax - quantidadeNoCarrinho(produto.id, variante.cor ?? null, tamanho));
+        return { variante, item, estoqueMax, disponivel };
+    }).filter(candidato => candidato.item && candidato.disponivel > 0);
+    if (candidatos.reduce((total, candidato) => total + candidato.disponivel, 0) < quantidade) return null;
+
+    const resultado = new Map();
+    for (let unidade = 0; unidade < quantidade; unidade++) {
+        const totalDisponivel = candidatos.reduce((total, candidato) => total + candidato.disponivel, 0);
+        let sorteio = Math.floor(Math.random() * totalDisponivel);
+        const escolhido = candidatos.find(candidato => {
+            sorteio -= candidato.disponivel;
+            return sorteio < 0;
+        });
+        escolhido.disponivel--;
+        const cor = escolhido.variante.cor ?? null;
+        const cartId = `${produto.id}_${cor ?? 'sem-cor'}_${tamanho}`;
+        const existente = resultado.get(cartId);
+        if (existente) existente.quantidade++;
+        else resultado.set(cartId, {
+            cartId,
+            id: produto.id,
+            tamanho,
+            cor,
+            corAleatoria: true,
+            nome: produto.nome,
+            preco: Number(escolhido.item.preco) || 0,
+            quantidade: 1,
+            imagem: produto.imagem || '',
+            estoqueMax: escolhido.estoqueMax,
+        });
+    }
+    return Array.from(resultado.values());
 }
 
 function alterarQuantidade(cartId, delta) {
@@ -376,7 +490,7 @@ function atualizarCarrinho() {
                     <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; background: #f8fafc; border-radius: 6px; padding: 8px; border: 1px solid #e2e8f0;">
                         ${grupo.tamanhos.map(t => `
                             <div style="display: flex; align-items: center; gap: 5px; background: #ffffff; padding: 3px 6px; border-radius: 4px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
-                                <span class="cart-color-dot" style="background:${t.cor || '#1c1c1a'}" title="Cor selecionada"></span><span style="font-size: 11px; font-weight: 800; color: var(--brand-purple); min-width: 16px; text-align: center;">${t.tamanho}</span>
+                                ${t.corAleatoria ? '<span class="cart-color-random">Cor variada</span>' : `<span class="cart-color-dot" style="background:${t.cor || '#1c1c1a'}" title="Cor selecionada"></span>`}<span style="font-size: 11px; font-weight: 800; color: var(--brand-purple); min-width: 16px; text-align: center;">${t.tamanho}</span>
                                 <button onclick="alterarQuantidade('${t.cartId}', -1)" style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: #e2e8f0; color: #475569; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; transition: 0.2s;" onmouseover="this.style.background='#cbd5e1'" onmouseout="this.style.background='#e2e8f0'">-</button>
                                 <span style="font-size: 12px; font-weight: 700; color: #0f172a; min-width: 14px; text-align: center;">${t.quantidade}</span>
                                 <button onclick="alterarQuantidade('${t.cartId}', 1)" style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: #e2e8f0; color: #475569; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; transition: 0.2s;" onmouseover="this.style.background='#cbd5e1'" onmouseout="this.style.background='#e2e8f0'">+</button>

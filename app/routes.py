@@ -102,6 +102,22 @@ def referencia_em_uso(codigo, ignorar_id=None):
     return consulta.first() is not None
 
 
+def referencia_para_conjunto(eh_conjunto, referencia, codigo, ignorar_id=None):
+    if not eh_conjunto:
+        return None
+    referencia = str(referencia or '').strip()
+    if not referencia:
+        raise ValueError('Selecione a referência da outra peça do conjunto.')
+    if referencia.casefold() == str(codigo or '').strip().casefold():
+        raise ValueError('A referência do conjunto precisa ser diferente da peça atual.')
+    produto_relacionado = Produto.query.filter(
+        db.func.lower(db.func.trim(Produto.codigo)) == referencia.casefold()
+    ).first()
+    if not produto_relacionado or produto_relacionado.id == ignorar_id:
+        raise ValueError('A referência selecionada não corresponde a outro produto cadastrado.')
+    return produto_relacionado.codigo
+
+
 def variantes_com_cor_hex(variantes):
     return [{**variante, 'cor_hex': cor_para_hex(variante.get('cor')), 'cor_nome': nome_cor(variante.get('cor'))} for variante in variantes]
 
@@ -341,6 +357,24 @@ def index():
     inicio = (page - 1) * per_page
     fim = inicio + per_page
     produtos_paginados = produtos_ordenados[inicio:fim]
+    produtos_por_referencia = {
+        str(produto.codigo or '').strip().casefold(): produto
+        for produto in Produto.query.all()
+        if str(produto.codigo or '').strip()
+    }
+    conjuntos_relacionados = {}
+    for produto in produtos_paginados:
+        if not produto.eh_conjunto or not produto.referencia_conjunto:
+            continue
+        relacionado = produtos_por_referencia.get(produto.referencia_conjunto.strip().casefold())
+        if relacionado and relacionado.id != produto.id:
+            conjuntos_relacionados[produto.id] = {
+                'id': relacionado.id,
+                'codigo': relacionado.codigo,
+                'nome': relacionado.nome,
+                'imagem': url_for('static', filename=relacionado.imagem_url),
+                'variantes': variantes_com_cor_hex(variantes_do_produto(relacionado)),
+            }
 
     return render_template('index.html', 
                            produtos=type('PaginaProdutos', (), {
@@ -355,6 +389,7 @@ def index():
                            imagens_site=imagens_site,
                            usuario_logado=current_user.is_authenticated,
                            nome_usuario=current_user.nome if current_user.is_authenticated else '',
+                           conjuntos_relacionados=conjuntos_relacionados,
                            categoria_atual=categoria)
 
 @main_bp.route('/api/cadastro', methods=['POST'])
@@ -477,6 +512,7 @@ def api_admin_produtos():
     return jsonify([{
         "id": p.id, "codigo": p.codigo, "nome": p.nome, "preco": p.preco,
         "precos": {tamanho: preco_tamanho(p, tamanho) for tamanho in ('P', 'M', 'G', 'GG')}, "grade": grade_do_produto(p), "cores": p.cores_config, "variantes": variantes_com_cor_hex(variantes_do_produto(p)), "imagem_url": p.imagem_url,
+        "eh_conjunto": p.eh_conjunto, "referencia_conjunto": p.referencia_conjunto,
         "imagens": [{"id": imagem.id, "url": imagem.imagem_url} for imagem in p.imagens],
         "p": p.estoque_p, "m": p.estoque_m, "g": p.estoque_g, "gg": p.estoque_gg
     } for p in produtos])
@@ -575,6 +611,10 @@ def api_admin_cadastrar_produto():
         quantidades = [int(request.form.get(tamanho) or 0) for tamanho in ('p', 'm', 'g', 'gg')]
         if not codigo or not nome or not arquivos or not variantes_personalizadas:
             return jsonify({"sucesso": False, "mensagem": "Código, nome e pelo menos uma foto são obrigatórios."})
+        eh_conjunto = str(request.form.get('eh_conjunto', '')).casefold() in {'1', 'true', 'on', 'yes'}
+        referencia_conjunto = referencia_para_conjunto(
+            eh_conjunto, request.form.get('referencia_conjunto'), codigo
+        )
         precos_grade = [float(tamanho.get('preco')) for variante in variantes_personalizadas for tamanho in variante.get('tamanhos', []) if tamanho.get('preco') not in (None, '')]
         if not preco_unico and len(precos_grade) != len(grade_personalizada):
             return jsonify({"sucesso": False, "mensagem": "Informe um preço único ou o preço de cada tamanho."})
@@ -591,7 +631,7 @@ def api_admin_cadastrar_produto():
             return jsonify({"sucesso": False, "mensagem": "Adicione pelo menos uma cor e um tamanho válido."})
         cores_normalizadas = [cor for cor in (normalizar_cor(item) for item in cores_personalizadas) if cor]
         grade_normalizada = variantes_normalizadas[0]['tamanhos']
-        novo_produto = Produto(codigo=codigo, nome=nome, preco=preco_base, preco_p=precos['p'], preco_m=precos['m'], preco_g=precos['g'], preco_gg=precos['gg'], grade=json.dumps(grade_normalizada, ensure_ascii=False), cores=json.dumps(cores_normalizadas), variantes=json.dumps(variantes_normalizadas, ensure_ascii=False), etiqueta='NOVO', imagem_url='img/default.jpg', estoque_p=quantidades[0], estoque_m=quantidades[1], estoque_g=quantidades[2], estoque_gg=quantidades[3])
+        novo_produto = Produto(codigo=codigo, nome=nome, preco=preco_base, preco_p=precos['p'], preco_m=precos['m'], preco_g=precos['g'], preco_gg=precos['gg'], grade=json.dumps(grade_normalizada, ensure_ascii=False), cores=json.dumps(cores_normalizadas), variantes=json.dumps(variantes_normalizadas, ensure_ascii=False), eh_conjunto=eh_conjunto, referencia_conjunto=referencia_conjunto, etiqueta='NOVO', imagem_url='img/default.jpg', estoque_p=quantidades[0], estoque_m=quantidades[1], estoque_g=quantidades[2], estoque_gg=quantidades[3])
         db.session.add(novo_produto)
         salvar_imagens_produto(novo_produto, arquivos)
         db.session.commit()
@@ -616,7 +656,21 @@ def api_admin_editar_produto(id):
         codigo_novo = request.form.get('codigo', prod.codigo).strip()
         if referencia_em_uso(codigo_novo, ignorar_id=prod.id):
             return jsonify({"sucesso": False, "mensagem": f"A referência {codigo_novo} já está cadastrada em outro produto."}), 409
+        codigo_antigo = prod.codigo
+        eh_conjunto = str(request.form.get('eh_conjunto', 'true' if prod.eh_conjunto else '')).casefold() in {'1', 'true', 'on', 'yes'}
+        referencia_conjunto = referencia_para_conjunto(
+            eh_conjunto,
+            request.form.get('referencia_conjunto', prod.referencia_conjunto),
+            codigo_novo,
+            ignorar_id=prod.id,
+        )
         prod.codigo = codigo_novo
+        prod.eh_conjunto = eh_conjunto
+        prod.referencia_conjunto = referencia_conjunto
+        if codigo_antigo and codigo_antigo.casefold() != codigo_novo.casefold():
+            Produto.query.filter(
+                db.func.lower(db.func.trim(Produto.referencia_conjunto)) == codigo_antigo.strip().casefold()
+            ).update({Produto.referencia_conjunto: codigo_novo}, synchronize_session=False)
         prod.nome = request.form.get('nome', prod.nome)
         if request.form.get('preco'):
             prod.preco = float(request.form.get('preco'))
@@ -687,6 +741,10 @@ def api_admin_excluir_produto(id):
     try:
         prod = Produto.query.get(id)
         if prod:
+            if prod.codigo:
+                Produto.query.filter(
+                    db.func.lower(db.func.trim(Produto.referencia_conjunto)) == prod.codigo.strip().casefold()
+                ).update({Produto.referencia_conjunto: None}, synchronize_session=False)
             db.session.delete(prod)
             db.session.commit()
         return jsonify({"sucesso": True})
