@@ -232,11 +232,11 @@ def salvar_imagem_otimizada(arquivo, save_path, extensao):
     with Image.open(arquivo.stream) as imagem:
         imagem = ImageOps.exif_transpose(imagem)
         if extensao in {'.jpg', '.jpeg'}:
-            imagem.convert('RGB').save(save_path, 'JPEG', quality=88, optimize=True, progressive=True)
+            imagem.convert('RGB').save(save_path, 'JPEG', quality=95, optimize=True, progressive=True)
         elif extensao == '.png':
             imagem.save(save_path, 'PNG', optimize=True)
         elif extensao == '.webp':
-            imagem.save(save_path, 'WEBP', quality=88, method=6)
+            imagem.save(save_path, 'WEBP', quality=95, method=6)
 
     gerar_variantes_imagem(save_path)
 

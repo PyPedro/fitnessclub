@@ -810,3 +810,26 @@ footer p { color: #bcb7ae !important; }
     .floating-variant-row { grid-template-columns: 1fr 1fr; }
     .floating-variant-row input:first-child { grid-column: span 2; }
 }
+
+body.image-viewer-open { overflow: hidden; }
+.product-main-image { cursor: zoom-in; }
+.product-main-image:focus-visible { outline: 3px solid #fff; outline-offset: -5px; }
+.product-image-viewer { position: fixed; inset: 0; z-index: 10010; display: none; align-items: center; justify-content: center; padding: 60px 76px; background: rgba(15, 15, 14, .94); }
+.product-image-viewer-image { display: block; width: auto; height: auto; max-width: calc(100vw - 152px); max-height: calc(100vh - 120px); object-fit: contain; box-shadow: 0 12px 50px rgba(0, 0, 0, .35); }
+.image-viewer-close, .image-viewer-arrow { position: absolute; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, .55); border-radius: 50%; background: rgba(28, 28, 26, .7); color: #fff; cursor: pointer; transition: background .2s; }
+.image-viewer-close:hover, .image-viewer-arrow:hover { background: rgba(80, 78, 73, .95); }
+.image-viewer-close { top: 22px; right: 22px; width: 42px; height: 42px; font-size: 28px; line-height: 1; }
+.image-viewer-arrow { top: 50%; width: 46px; height: 46px; font-size: 34px; line-height: 1; transform: translateY(-50%); }
+.image-viewer-prev { left: 20px; }
+.image-viewer-next { right: 20px; }
+.image-viewer-counter { position: absolute; bottom: 20px; left: 50%; color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 1px; transform: translateX(-50%); }
+.image-viewer-arrow[hidden] { display: none; }
+
+@media (max-width: 768px) {
+    .product-image-viewer { padding: 64px 48px; }
+    .product-image-viewer-image { max-width: calc(100vw - 96px); max-height: calc(100vh - 128px); }
+    .image-viewer-close { top: 14px; right: 14px; width: 38px; height: 38px; }
+    .image-viewer-arrow { width: 36px; height: 36px; font-size: 28px; }
+    .image-viewer-prev { left: 8px; }
+    .image-viewer-next { right: 8px; }
+}

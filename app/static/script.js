@@ -1,6 +1,9 @@
 let carrinho = [];
 let freteSelecionadoValor = 0;
 let produtoTemp = null;
+let galeriaImagemAmpliada = null;
+let imagemOrigemAmpliada = null;
+let indiceImagemAmpliada = 0;
 
 function trocarImagemProduto(botao, imagemUrl) {
     const galeria = botao.closest('.product-gallery');
@@ -15,6 +18,7 @@ function trocarImagemProduto(botao, imagemUrl) {
     }).catch(() => {
         if (Number(galeria.dataset.imageRequest) === requisicao) imagemPrincipal.src = imagemUrl;
     });
+    if (botao.dataset.fullSrc) imagemPrincipal.dataset.fullSrc = botao.dataset.fullSrc;
     const miniaturas = Array.from(galeria.querySelectorAll('.product-thumbnail'));
     miniaturas.forEach(thumbnail => {
         thumbnail.classList.remove('active');
@@ -51,6 +55,72 @@ function navegarGaleria(botao, direcao) {
     trocarImagemProduto(miniatura, miniatura.dataset.gallerySrc);
     miniatura.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 }
+
+function abrirImagemProduto(imagem) {
+    const modal = document.getElementById('productImageViewer');
+    const galeria = imagem.closest('.product-gallery');
+    if (!modal || !imagem.dataset.fullSrc) return;
+
+    galeriaImagemAmpliada = galeria;
+    imagemOrigemAmpliada = imagem;
+    const miniaturas = galeria ? Array.from(galeria.querySelectorAll('.product-thumbnail')) : [];
+    indiceImagemAmpliada = Math.max(0, miniaturas.findIndex(miniatura => miniatura.classList.contains('active')));
+    atualizarImagemAmpliada();
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('image-viewer-open');
+    modal.querySelector('.image-viewer-close').focus();
+}
+
+function atualizarImagemAmpliada() {
+    const modal = document.getElementById('productImageViewer');
+    const imagem = document.getElementById('productImageViewerImage');
+    const contador = document.getElementById('productImageViewerCounter');
+    if (!modal || !imagem || !contador) return;
+
+    const miniaturas = galeriaImagemAmpliada
+        ? Array.from(galeriaImagemAmpliada.querySelectorAll('.product-thumbnail'))
+        : [];
+    const principal = galeriaImagemAmpliada?.querySelector('.product-main-image') || imagemOrigemAmpliada;
+    const miniatura = miniaturas[indiceImagemAmpliada];
+    imagem.src = miniatura?.dataset.fullSrc || principal?.dataset.fullSrc || '';
+    imagem.alt = miniatura?.getAttribute('aria-label') || principal?.alt || '';
+    contador.textContent = miniaturas.length > 1 ? `${indiceImagemAmpliada + 1} / ${miniaturas.length}` : '';
+    modal.querySelector('.image-viewer-prev').hidden = miniaturas.length < 2;
+    modal.querySelector('.image-viewer-next').hidden = miniaturas.length < 2;
+}
+
+function navegarImagemAmpliada(direcao) {
+    if (!galeriaImagemAmpliada) return;
+    const miniaturas = Array.from(galeriaImagemAmpliada.querySelectorAll('.product-thumbnail'));
+    if (miniaturas.length < 2) return;
+
+    indiceImagemAmpliada = (indiceImagemAmpliada + direcao + miniaturas.length) % miniaturas.length;
+    const miniatura = miniaturas[indiceImagemAmpliada];
+    trocarImagemProduto(miniatura, miniatura.dataset.gallerySrc);
+    atualizarImagemAmpliada();
+}
+
+function fecharVisualizadorProduto(evento) {
+    const modal = document.getElementById('productImageViewer');
+    if (!modal || (evento && evento.target !== modal)) return;
+
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('image-viewer-open');
+    imagemOrigemAmpliada?.focus();
+    galeriaImagemAmpliada = null;
+    imagemOrigemAmpliada = null;
+}
+
+document.addEventListener('keydown', evento => {
+    const modal = document.getElementById('productImageViewer');
+    if (!modal || modal.getAttribute('aria-hidden') === 'true') return;
+
+    if (evento.key === 'Escape') fecharVisualizadorProduto();
+    if (evento.key === 'ArrowLeft') navegarImagemAmpliada(-1);
+    if (evento.key === 'ArrowRight') navegarImagemAmpliada(1);
+});
 
 // ==========================================
 // FUNÇÕES DE ALERTAS (MODAL CUSTOMIZADO)

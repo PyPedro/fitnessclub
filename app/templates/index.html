@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=22">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=24">
 </head>
 <body>
 
@@ -100,18 +100,18 @@
             {% for p in produtos.items %}
             <div class="product-card">
                 <div class="product-img-wrapper product-gallery">
-                    <img class="product-main-image" src="{{ url_for('static', filename=imagem_variacao(p.imagem_url, 'gallery')) }}" alt="{{ p.nome }}" loading="lazy" decoding="async">
+                    <img class="product-main-image" src="{{ url_for('static', filename=imagem_variacao(p.imagem_url, 'gallery')) }}" data-full-src="{{ url_for('static', filename=p.imagem_url) }}" alt="{{ p.nome }}" role="button" tabindex="0" aria-label="Ampliar foto de {{ p.nome }}" onclick="abrirImagemProduto(this)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); abrirImagemProduto(this); }" loading="lazy" decoding="async">
                     {% if p.imagens %}
                     {% set total_imagens = p.imagens|length + 1 %}
                     <button type="button" class="gallery-arrow gallery-arrow-prev" aria-label="Imagem anterior" onpointerenter="precarregarImagemGaleria(this, -1)" onclick="navegarGaleria(this, -1)">‹</button>
                     <button type="button" class="gallery-arrow gallery-arrow-next" aria-label="Próxima imagem" onpointerenter="precarregarImagemGaleria(this, 1)" onclick="navegarGaleria(this, 1)">›</button>
                     <span class="gallery-counter" aria-live="polite">1 / {{ total_imagens }}</span>
                     <div class="product-thumbnails" role="tablist" aria-label="Fotos de {{ p.nome }}">
-                        <button type="button" class="product-thumbnail active" role="tab" aria-selected="true" aria-label="Foto 1 de {{ p.nome }}" data-gallery-src="{{ url_for('static', filename=imagem_variacao(p.imagem_url, 'gallery')) }}" onpointerenter="precarregarImagemGaleria(this)" onclick="trocarImagemProduto(this, this.dataset.gallerySrc)">
+                        <button type="button" class="product-thumbnail active" role="tab" aria-selected="true" aria-label="Foto 1 de {{ p.nome }}" data-gallery-src="{{ url_for('static', filename=imagem_variacao(p.imagem_url, 'gallery')) }}" data-full-src="{{ url_for('static', filename=p.imagem_url) }}" onpointerenter="precarregarImagemGaleria(this)" onclick="trocarImagemProduto(this, this.dataset.gallerySrc)">
                             <img src="{{ url_for('static', filename=imagem_variacao(p.imagem_url, 'thumb')) }}" alt="Capa de {{ p.nome }}" loading="lazy" decoding="async">
                         </button>
                         {% for imagem in p.imagens %}
-                        <button type="button" class="product-thumbnail" role="tab" aria-selected="false" aria-label="Foto {{ loop.index + 1 }} de {{ p.nome }}" data-gallery-src="{{ url_for('static', filename=imagem_variacao(imagem.imagem_url, 'gallery')) }}" onpointerenter="precarregarImagemGaleria(this)" onclick="trocarImagemProduto(this, this.dataset.gallerySrc)">
+                        <button type="button" class="product-thumbnail" role="tab" aria-selected="false" aria-label="Foto {{ loop.index + 1 }} de {{ p.nome }}" data-gallery-src="{{ url_for('static', filename=imagem_variacao(imagem.imagem_url, 'gallery')) }}" data-full-src="{{ url_for('static', filename=imagem.imagem_url) }}" onpointerenter="precarregarImagemGaleria(this)" onclick="trocarImagemProduto(this, this.dataset.gallerySrc)">
                             <img src="{{ url_for('static', filename=imagem_variacao(imagem.imagem_url, 'thumb')) }}" alt="Foto {{ loop.index }} de {{ p.nome }}" loading="lazy" decoding="async">
                         </button>
                         {% endfor %}
@@ -311,9 +311,17 @@
         </div>
     </div>
 
+    <div id="productImageViewer" class="product-image-viewer" role="dialog" aria-modal="true" aria-label="Visualização da imagem do produto" aria-hidden="true" onclick="fecharVisualizadorProduto(event)">
+        <button type="button" class="image-viewer-close" aria-label="Fechar visualização" onclick="fecharVisualizadorProduto()">×</button>
+        <button type="button" class="image-viewer-arrow image-viewer-prev" aria-label="Imagem anterior" onclick="navegarImagemAmpliada(-1)">‹</button>
+        <img id="productImageViewerImage" class="product-image-viewer-image" alt="">
+        <button type="button" class="image-viewer-arrow image-viewer-next" aria-label="Próxima imagem" onclick="navegarImagemAmpliada(1)">›</button>
+        <span id="productImageViewerCounter" class="image-viewer-counter" aria-live="polite"></span>
+    </div>
+
     <script>
         const usuarioLogado = {{ 'true' if usuario_logado else 'false' }};
     </script>
-    <script src="{{ url_for('static', filename='script.js') }}?v=16"></script>
+    <script src="{{ url_for('static', filename='script.js') }}?v=17"></script>
 </body>
 </html>
