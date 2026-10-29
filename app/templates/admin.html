@@ -5,6 +5,7 @@
     <title>Centro de Controle - Enixs Jeans</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -216,6 +217,16 @@
 </head>
 <body>
 
+    {% with mensagens = get_flashed_messages(with_categories=true) %}
+        {% if mensagens %}
+            <div class="mb-5 space-y-2" role="status">
+                {% for categoria, mensagem in mensagens %}
+                    <div class="rounded-lg border px-4 py-3 text-sm font-medium {{ 'border-green-200 bg-green-50 text-green-800' if categoria == 'success' else 'border-red-200 bg-red-50 text-red-800' }}">{{ mensagem }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
     <div class="top-header">
         <div class="header-titles">
             <span>Admin Workspace</span>
@@ -309,6 +320,14 @@
                 </div>
                 <button class="btn-primary" onclick="document.getElementById('modalNovoProduto').style.display='flex'">+ Novo Produto</button>
             </div>
+        </div>
+        <div class="mb-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h3 class="mb-1 text-sm font-semibold text-slate-900">Importar produtos por CSV</h3>
+            <p class="mb-4 text-sm text-slate-600">Selecione o arquivo CSV de produtos para importar o catálogo e o estoque.</p>
+            <form action="{{ url_for('main.importar_csv') }}" method="POST" enctype="multipart/form-data" class="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                <input type="file" accept=".csv" name="arquivo" required class="block w-full max-w-xl rounded-lg border border-slate-300 bg-white text-sm text-slate-700 file:mr-4 file:rounded-md file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200">
+                <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">Importar CSV</button>
+            </form>
         </div>
         <div class="stock-search"><label for="estoque-busca">Buscar produto por código ou nome</label><input id="estoque-busca" type="search" placeholder="Buscar por código ou produto" autocomplete="off" oninput="filtrarEstoque()" aria-controls="estoque-lista"></div>
         <div id="estoque-lista" class="stock-product-list" aria-label="Produtos e estoque"></div>

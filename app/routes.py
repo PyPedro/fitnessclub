@@ -1,6 +1,9 @@
+import csv
+import io
+import math
 import os
 from PIL import Image, ImageOps, UnidentifiedImageError
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session, current_app
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session, current_app, flash
 from app.models import Produto, ProdutoImagem, Usuario, Pedido, Admin, Visita, ImagemSite, ImportacaoEstoque, completar_tamanhos
 from app import db
 from flask_login import login_user, logout_user, login_required, current_user
@@ -505,6 +508,152 @@ def admin_logout():
 def admin_dashboard():
     if not session.get('admin_logado'): return redirect(url_for('main.admin_login'))
     return render_template('admin.html')
+
+@main_bp.route('/admin/importar-csv', methods=['POST'])
+def importar_csv():
+    if not session.get('admin_logado'):
+        return redirect(url_for('main.admin_login'))
+
+    arquivo = request.files.get('arquivo')
+    if arquivo is None or not arquivo.filename:
+        flash('Selecione um arquivo CSV para importar.', 'error')
+        return redirect(url_for('main.admin_dashboard'))
+
+    try:
+        conteudo = arquivo.stream.read().decode('utf-8-sig')
+        leitor = csv.DictReader(io.StringIO(conteudo), delimiter=';')
+        colunas_obrigatorias = {
+            'Nome', 'Preço', 'referencia', 'Estoque-Saldo',
+            'Variacao1', 'Variavel1', 'Variacao2', 'Variavel2',
+            'Variacao3', 'Variavel3', 'Variacao4', 'Variavel4',
+        }
+        if leitor.fieldnames is None or not colunas_obrigatorias.issubset(leitor.fieldnames):
+            raise ValueError('O CSV não contém as colunas esperadas de produtos.')
+
+        produtos = {}
+        for numero_linha, linha in enumerate(leitor, start=2):
+            nome = (linha.get('Nome') or '').strip()
+            if not nome:
+                raise ValueError(f'Nome de produto vazio na linha {numero_linha}.')
+
+            referencia = (linha.get('referencia') or '').strip() or None
+            chave_nome = chave_nome_produto(nome)
+            chave = ('referencia', referencia.casefold(), chave_nome) if referencia else ('nome', chave_nome)
+            try:
+                preco = float((linha.get('Preço') or '').strip().replace(',', '.'))
+                estoque = int((linha.get('Estoque-Saldo') or '0').strip() or '0')
+            except ValueError as erro:
+                raise ValueError(f'Preço ou estoque inválido na linha {numero_linha}.') from erro
+            if not math.isfinite(preco) or preco < 0 or estoque < 0:
+                raise ValueError(f'Preço ou estoque negativo na linha {numero_linha}.')
+            if len(nome) > 100 or (referencia and len(referencia) > 50):
+                raise ValueError(f'Nome ou referência excede o limite permitido na linha {numero_linha}.')
+
+            cor = None
+            tamanho = None
+            for indice in range(1, 5):
+                rotulo = (linha.get(f'Variacao{indice}') or '').strip().casefold()
+                valor = (linha.get(f'Variavel{indice}') or '').strip()
+                if not rotulo or not valor:
+                    continue
+                if 'cor' in rotulo:
+                    cor = normalizar_cor(valor)
+                elif tamanho is None:
+                    tamanho = valor
+            tamanho = tamanho or 'Único'
+
+            produto = produtos.get(chave)
+            if produto is None:
+                produto = {
+                    'codigo': referencia,
+                    'nome': nome,
+                    'preco': preco,
+                    'preco_p': None,
+                    'preco_m': None,
+                    'preco_g': None,
+                    'preco_gg': None,
+                    'grade': None,
+                    'cores': None,
+                    'variantes': None,
+                    'eh_conjunto': False,
+                    'referencia_conjunto': None,
+                    'etiqueta': 'NOVO',
+                    'imagem_url': 'img/default.jpg',
+                    'estoque_p': 0,
+                    'estoque_m': 0,
+                    'estoque_g': 0,
+                    'estoque_gg': 0,
+                    '_variantes': {},
+                    '_cores': [],
+                }
+                produtos[chave] = produto
+
+            chave_cor = cor.casefold() if cor else ''
+            variante = produto['_variantes'].setdefault(chave_cor, {'cor': cor, '_tamanhos': {}})
+            tamanho_existente = variante['_tamanhos'].get(tamanho)
+            if tamanho_existente and tamanho_existente['preco'] != preco:
+                raise ValueError(f'Preços divergentes para o tamanho {tamanho} do produto {nome}.')
+            if tamanho_existente:
+                tamanho_existente['estoque'] += estoque
+            else:
+                variante['_tamanhos'][tamanho] = {'estoque': estoque, 'preco': preco}
+            if cor and cor not in produto['_cores']:
+                produto['_cores'].append(cor)
+
+        if not produtos:
+            raise ValueError('O CSV não contém produtos para importar.')
+
+        mapeamentos = []
+        referencias_csv = {
+            produto['codigo'].casefold()
+            for produto in produtos.values()
+            if produto['codigo']
+        }
+        codigos_usados = set()
+        for produto in produtos.values():
+            variantes = []
+            for variante in produto.pop('_variantes').values():
+                tamanhos = [
+                    {
+                        'nome': nome_tamanho,
+                        'estoque': dados_tamanho['estoque'],
+                        'preco': dados_tamanho['preco'],
+                    }
+                    for nome_tamanho, dados_tamanho in variante.pop('_tamanhos').items()
+                ]
+                variantes.append({'cor': variante['cor'], 'tamanhos': tamanhos})
+            produto['variantes'] = json.dumps(variantes, ensure_ascii=False)
+            produto['grade'] = json.dumps(variantes[0]['tamanhos'], ensure_ascii=False)
+            produto['cores'] = json.dumps(produto.pop('_cores'), ensure_ascii=False)
+            referencia = produto['codigo']
+            if referencia:
+                codigo = referencia
+                sufixo = 2
+                while codigo.casefold() in codigos_usados or (
+                    codigo.casefold() != referencia.casefold()
+                    and codigo.casefold() in referencias_csv
+                ):
+                    final = f'-{sufixo}'
+                    codigo = f'{referencia[:50 - len(final)]}{final}'
+                    sufixo += 1
+                produto['codigo'] = codigo
+                codigos_usados.add(codigo.casefold())
+            for variante in variantes:
+                for tamanho in variante['tamanhos']:
+                    estoque_legado = f"estoque_{tamanho['nome'].casefold()}"
+                    if estoque_legado in {'estoque_p', 'estoque_m', 'estoque_g', 'estoque_gg'}:
+                        produto[estoque_legado] += tamanho['estoque']
+            mapeamentos.append(produto)
+
+        db.session.bulk_insert_mappings(Produto, mapeamentos)
+        db.session.commit()
+        flash(f'Importação concluída com sucesso: {len(mapeamentos)} produtos importados.', 'success')
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception('Falha ao importar o arquivo CSV de produtos.')
+        flash('Não foi possível importar o CSV. Verifique o formato, os dados e se as referências já estão cadastradas.', 'error')
+
+    return redirect(url_for('main.admin_dashboard'))
 
 @main_bp.route('/api/admin/admins', methods=['GET', 'POST'])
 def api_admin_admins():
