@@ -86,6 +86,34 @@ def test_importar_csv_falha_sem_gravar_se_houver_dado_invalido(monkeypatch):
         assert Produto.query.filter_by(codigo='CSV-002').count() == 0
 
 
+def test_importacao_em_lote_aceita_csv_e_retorna_json(monkeypatch):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+    linhas = [{
+        'Nome': 'Produto do botão em lote', 'Preço': '15.00', 'referencia': 'CSV-003',
+        'Estoque-Saldo': '2', 'Variacao1': 'GRADE', 'Variavel1': 'P',
+    }]
+
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin_logado'] = True
+        resposta = client.post(
+            '/admin/importar-csv?formato=json',
+            data={'arquivo': (_criar_csv(linhas), 'produtos.csv')},
+            content_type='multipart/form-data',
+        )
+
+    assert resposta.status_code == 200
+    assert resposta.get_json() == {
+        'sucesso': True,
+        'mensagem': 'Importação concluída com sucesso: 1 produtos importados.',
+        'produtos': 1,
+    }
+    with app.app_context():
+        assert Produto.query.filter_by(codigo='CSV-003').one().estoque_p == 2
+
+
 def test_formulario_de_importacao_csv_no_painel(monkeypatch):
     monkeypatch.setenv('DATABASE_URL', 'sqlite://')
     app = create_app()
@@ -101,4 +129,5 @@ def test_formulario_de_importacao_csv_no_painel(monkeypatch):
     assert 'enctype="multipart/form-data"' in html
     assert 'type="file" accept=".csv" name="arquivo" required' in html
     assert 'Importar CSV' in html
-
+    assert "arquivo.name.toLocaleLowerCase().endsWith('.csv')" in html
+    assert "'/admin/importar-csv?formato=json' : '/api/admin/importar-estoque'" in html

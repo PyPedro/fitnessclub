@@ -511,11 +511,16 @@ def admin_dashboard():
 
 @main_bp.route('/admin/importar-csv', methods=['POST'])
 def importar_csv():
+    resposta_json = request.args.get('formato') == 'json'
     if not session.get('admin_logado'):
+        if resposta_json:
+            return jsonify({'sucesso': False, 'mensagem': 'Não autorizado.'}), 401
         return redirect(url_for('main.admin_login'))
 
     arquivo = request.files.get('arquivo')
     if arquivo is None or not arquivo.filename:
+        if resposta_json:
+            return jsonify({'sucesso': False, 'mensagem': 'Selecione um arquivo CSV para importar.'}), 400
         flash('Selecione um arquivo CSV para importar.', 'error')
         return redirect(url_for('main.admin_dashboard'))
 
@@ -647,10 +652,21 @@ def importar_csv():
 
         db.session.bulk_insert_mappings(Produto, mapeamentos)
         db.session.commit()
+        if resposta_json:
+            return jsonify({
+                'sucesso': True,
+                'mensagem': f'Importação concluída com sucesso: {len(mapeamentos)} produtos importados.',
+                'produtos': len(mapeamentos),
+            })
         flash(f'Importação concluída com sucesso: {len(mapeamentos)} produtos importados.', 'success')
     except Exception:
         db.session.rollback()
         current_app.logger.exception('Falha ao importar o arquivo CSV de produtos.')
+        if resposta_json:
+            return jsonify({
+                'sucesso': False,
+                'mensagem': 'Não foi possível importar o CSV. Verifique o formato, os dados e se as referências já estão cadastradas.',
+            }), 400
         flash('Não foi possível importar o CSV. Verifique o formato, os dados e se as referências já estão cadastradas.', 'error')
 
     return redirect(url_for('main.admin_dashboard'))

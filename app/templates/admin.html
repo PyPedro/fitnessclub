@@ -856,8 +856,10 @@
             }
             if (!confirm('Deseja importar o cadastro em lote com a grade de estoque atual?')) return;
             const formData = new FormData();
-            formData.append('arquivo', inputArquivo.files[0]);
-            fetch('/api/admin/importar-estoque', {
+            const arquivo = inputArquivo.files[0];
+            const ehCsv = arquivo.name.toLocaleLowerCase().endsWith('.csv');
+            formData.append('arquivo', arquivo);
+            fetch(ehCsv ? '/admin/importar-csv?formato=json' : '/api/admin/importar-estoque', {
                 method: 'POST',
                 body: formData
             })
