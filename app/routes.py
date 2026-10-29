@@ -525,13 +525,19 @@ def importar_csv():
         return redirect(url_for('main.admin_dashboard'))
 
     try:
-        conteudo = arquivo.stream.read().decode('utf-8-sig')
-        leitor = csv.DictReader(io.StringIO(conteudo), delimiter=';')
-        colunas_obrigatorias = {
-            'Nome', 'Preço', 'referencia', 'Estoque-Saldo',
-            'Variacao1', 'Variavel1', 'Variacao2', 'Variavel2',
-            'Variacao3', 'Variavel3', 'Variacao4', 'Variavel4',
-        }
+        conteudo_bytes = arquivo.stream.read()
+        try:
+            conteudo = conteudo_bytes.decode('utf-8-sig')
+        except UnicodeDecodeError:
+            conteudo = conteudo_bytes.decode('cp1252')
+        try:
+            dialeto = csv.Sniffer().sniff(conteudo[:8192], delimiters=';,\t')
+        except csv.Error as erro:
+            raise ValueError('Não foi possível identificar o separador do CSV.') from erro
+        leitor = csv.DictReader(io.StringIO(conteudo), dialect=dialeto)
+        if leitor.fieldnames:
+            leitor.fieldnames = [campo.strip() for campo in leitor.fieldnames]
+        colunas_obrigatorias = {'Nome', 'Preço', 'referencia', 'Estoque-Saldo'}
         if leitor.fieldnames is None or not colunas_obrigatorias.issubset(leitor.fieldnames):
             raise ValueError('O CSV não contém as colunas esperadas de produtos.')
 

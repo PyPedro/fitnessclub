@@ -6,14 +6,14 @@ from app import create_app, db
 from app.models import Produto
 
 
-def _criar_csv(linhas):
+def _criar_csv(linhas, campos=None, delimitador=';'):
     buffer = io.StringIO()
-    campos = [
+    campos = campos or [
         'Nome', 'Preço', 'referencia', 'Estoque-Saldo',
         'Variacao1', 'Variavel1', 'Variacao2', 'Variavel2',
         'Variacao3', 'Variavel3', 'Variacao4', 'Variavel4',
     ]
-    escritor = csv.DictWriter(buffer, fieldnames=campos, delimiter=';')
+    escritor = csv.DictWriter(buffer, fieldnames=campos, delimiter=delimitador)
     escritor.writeheader()
     escritor.writerows(linhas)
     return io.BytesIO(buffer.getvalue().encode('utf-8-sig'))
@@ -59,6 +59,47 @@ def test_importar_csv_cria_produtos_com_variantes_e_estoque(monkeypatch):
             {'cor': 'Azul', 'tamanhos': [{'nome': 'M', 'estoque': 3, 'preco': 29.9}]},
             {'cor': 'Preto', 'tamanhos': [{'nome': 'G', 'estoque': 4, 'preco': 29.9}]},
         ]
+
+
+def test_importa_formato_exportado_completo_com_colunas_extras_e_csv_excel(monkeypatch):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+    campos = [
+        'Nome', 'Preço', 'Descrição', 'referencia', 'Categoria',
+        'Embalagem-Largura', 'Embalagem-Altura', 'Embalagem-Comprimento',
+        'Embalagem-Peso', 'Embalagem-Transporte', 'Estoque-Saldo',
+        'Variacao1', 'Variavel1', 'Variacao2', 'Variavel2',
+        'Variacao3', 'Variavel3', 'Variacao4', 'Variavel4',
+        'Fiscal-NCM', 'Fiscal-CEST', 'Fiscal-Origem', 'Fiscal-Unidade',
+        'Fiscal-PesoLiquido', 'Fiscal-PesoBruto',
+    ]
+    linhas = [{
+        'Nome': 'Calça jeans teste', 'Preço': '62,00',
+        'Descrição': '<p>Produto, descrição</p>', 'referencia': 'CSV-004',
+        'Categoria': 'Jeans masculino', 'Embalagem-Largura': '35',
+        'Embalagem-Altura': '3', 'Embalagem-Comprimento': '32',
+        'Embalagem-Peso': '1.00', 'Embalagem-Transporte': 'caixa',
+        'Estoque-Saldo': '77', 'Variacao1': 'GRADS', 'Variavel1': '40',
+        'Variacao2': '', 'Variavel2': '',
+    }]
+    arquivo = _criar_csv(linhas, campos=campos, delimitador=',').getvalue().decode('utf-8-sig').encode('cp1252')
+
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin_logado'] = True
+        resposta = client.post(
+            '/admin/importar-csv?formato=json',
+            data={'arquivo': (io.BytesIO(arquivo), 'produtos.csv')},
+            content_type='multipart/form-data',
+        )
+
+    assert resposta.status_code == 200
+    assert resposta.get_json()['sucesso'] is True
+    with app.app_context():
+        produto = Produto.query.filter_by(codigo='CSV-004').one()
+        assert produto.preco == 62
+        assert json.loads(produto.grade) == [{'nome': '40', 'estoque': 77, 'preco': 62}]
 
 
 def test_importar_csv_falha_sem_gravar_se_houver_dado_invalido(monkeypatch):
