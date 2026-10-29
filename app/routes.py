@@ -510,8 +510,9 @@ def admin_dashboard():
     return render_template('admin.html')
 
 @main_bp.route('/admin/importar-csv', methods=['POST'])
-def importar_csv():
-    resposta_json = request.args.get('formato') == 'json'
+def importar_csv(resposta_json=None):
+    if resposta_json is None:
+        resposta_json = request.args.get('formato') == 'json'
     if not session.get('admin_logado'):
         if resposta_json:
             return jsonify({'sucesso': False, 'mensagem': 'Não autorizado.'}), 401
@@ -551,8 +552,25 @@ def importar_csv():
             chave_nome = chave_nome_produto(nome)
             chave = ('referencia', referencia.casefold(), chave_nome) if referencia else ('nome', chave_nome)
             try:
-                preco = float((linha.get('Preço') or '').strip().replace(',', '.'))
-                estoque = int((linha.get('Estoque-Saldo') or '0').strip() or '0')
+                texto_preco = (linha.get('Preço') or '').strip()
+                texto_estoque = (linha.get('Estoque-Saldo') or '').strip()
+                if ',' in texto_preco:
+                    texto_preco = (
+                        texto_preco.replace('.', '').replace(',', '.')
+                        if texto_preco.rfind(',') > texto_preco.rfind('.')
+                        else texto_preco.replace(',', '')
+                    )
+                if ',' in texto_estoque:
+                    texto_estoque = (
+                        texto_estoque.replace('.', '').replace(',', '.')
+                        if texto_estoque.rfind(',') > texto_estoque.rfind('.')
+                        else texto_estoque.replace(',', '')
+                    )
+                preco = float(texto_preco or '0')
+                estoque_decimal = float(texto_estoque or '0')
+                if not estoque_decimal.is_integer():
+                    raise ValueError('A quantidade deve ser um número inteiro.')
+                estoque = int(estoque_decimal)
             except ValueError as erro:
                 raise ValueError(f'Preço ou estoque inválido na linha {numero_linha}.') from erro
             if not math.isfinite(preco) or preco < 0 or estoque < 0:
@@ -759,6 +777,9 @@ def api_admin_importar_estoque():
     if arquivo is None or not getattr(arquivo, 'filename', None):
         return jsonify({"sucesso": False, "mensagem": "Selecione um arquivo .txt para importar."}), 400
 
+    if arquivo.filename.casefold().endswith('.csv'):
+        return importar_csv(resposta_json=True)
+
     try:
         from scripts.importar_estoque import executar_importacao
         resultado = executar_importacao(
@@ -768,6 +789,7 @@ def api_admin_importar_estoque():
             gerar_referencia_ausente=True,
         )
     except Exception as erro:
+        current_app.logger.exception('Erro técnico ao importar arquivo de estoque.')
         return jsonify({"sucesso": False, "mensagem": f"Erro ao importar estoque: {erro}"}), 500
 
     if not resultado.get('sucesso'):

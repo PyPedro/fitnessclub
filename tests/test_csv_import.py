@@ -155,6 +155,80 @@ def test_importacao_em_lote_aceita_csv_e_retorna_json(monkeypatch):
         assert Produto.query.filter_by(codigo='CSV-003').one().estoque_p == 2
 
 
+def test_rota_importacao_estoque_encaminha_csv_e_ignora_colunas_extras(monkeypatch):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+    campos = [
+        'Nome', 'Preço', 'referencia', 'Estoque-Saldo',
+        'Variacao1', 'Variavel1', 'Variacao2', 'Variavel2', 'Coluna extra', '',
+    ]
+    linhas = [
+        {
+            'Nome': 'Produto com valores brasileiros', 'Preço': '1.234,50',
+            'referencia': 'CSV-005', 'Estoque-Saldo': '77,0',
+            'Variacao1': 'GRADE', 'Variavel1': '40',
+            'Coluna extra': 'ignorar este conteúdo',
+        },
+        {
+            'Nome': 'Produto com valores vazios', 'Preço': '',
+            'referencia': 'CSV-006', 'Estoque-Saldo': '',
+            'Variacao1': 'GRADE', 'Variavel1': 'M',
+        },
+    ]
+
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin_logado'] = True
+        resposta = client.post(
+            '/api/admin/importar-estoque',
+            data={'arquivo': (_criar_csv(linhas, campos=campos), 'produtos.CSV')},
+            content_type='multipart/form-data',
+        )
+
+    assert resposta.status_code == 200
+    assert resposta.get_json()['sucesso'] is True
+    with app.app_context():
+        produto_brasileiro = Produto.query.filter_by(codigo='CSV-005').one()
+        produto_vazio = Produto.query.filter_by(codigo='CSV-006').one()
+        assert produto_brasileiro.preco == 1234.5
+        assert json.loads(produto_brasileiro.grade) == [
+            {'nome': '40', 'estoque': 77, 'preco': 1234.5},
+        ]
+        assert produto_vazio.preco == 0
+        assert json.loads(produto_vazio.grade) == [
+            {'nome': 'M', 'estoque': 0, 'preco': 0},
+        ]
+
+
+def test_rota_importacao_registra_erro_tecnico_de_linha_txt(monkeypatch, caplog):
+    monkeypatch.setenv('DATABASE_URL', 'sqlite://')
+    app = create_app()
+    app.config['TESTING'] = True
+
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin_logado'] = True
+        resposta = client.post(
+            '/api/admin/importar-estoque',
+            data={
+                'arquivo': (
+                    io.BytesIO(
+                        b'Nome;Pre\xc3\xa7o;referencia;Estoque-Saldo\n'
+                        b'Produto de teste;10.00;007;5\n'
+                    ),
+                    'estoque.txt',
+                ),
+            },
+            content_type='multipart/form-data',
+        )
+
+    assert resposta.status_code == 500
+    assert 'Erro técnico ao importar arquivo de estoque.' in caplog.text
+    assert 'linha de estoque invalida' in caplog.text
+    assert 'Produto de teste;10.00;007;5' in caplog.text
+
+
 def test_formulario_de_importacao_csv_no_painel(monkeypatch):
     monkeypatch.setenv('DATABASE_URL', 'sqlite://')
     app = create_app()
